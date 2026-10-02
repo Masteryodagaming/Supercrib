@@ -1,0 +1,15 @@
+DEPLOY — emoji right rail (desktop-preview)
+
+Root cause
+  Desktop media queries (@media min-width 900px / 1100px) set `.reaction-dock { left: … }`
+  for BOTH docks. That overrode `.reaction-dock-right { left: auto; right: … }`, so the
+  right column was pulled/stretched onto the left (stacked under the left 4). Right side
+  only showed ZOOM / C&J. Mid-zone also used padding-right: 0.35rem (left had 3.6rem).
+
+Fix (src/ui/styles.css only)
+  - Shared `.reaction-dock` desktop rules no longer set `left`.
+  - Explicit `.reaction-dock-left { left; right: auto }` and `.reaction-dock-right { right; left: auto }`.
+  - Symmetric mid-zone gutters (3.6rem / 3.85rem) so both rails clear the board.
+  - Phone / base left+right anchors unchanged; 8-slot ReactionBar.tsx loadout unchanged.
+
+Do NOT firebase deploy from this note alone — ship dist tar.

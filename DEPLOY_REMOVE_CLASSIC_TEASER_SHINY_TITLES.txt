@@ -1,0 +1,22 @@
+Remove Classic locked teaser + shinier Settings titles
+Date: 2026-09-17 ~15:10 ADT (America/Halifax)
+Tree: /workspace/supercrib (live)
+NO firebase deploy from executor — preview-first.
+Tar: /workspace/supercrib-dist.tar.gz
+
+WHAT
+1. Remove locked Classic / Coming soon row under Owned Felts.
+2. Bigger + shinier coin-metal gold section labels + tabs in Settings.
+
+FIX
+- src/profile/felts.ts: drop { id: 'classic', locked: true }; getSelectableFelts
+  returns free/owned only (no locked teasers). Classic Felt (id 'felt') stays.
+- src/ui/Settings.tsx: remove felt.id === 'classic' swatch branch.
+- src/ui/styles.css: delete .owned-felt-swatch-classic; add
+  .settings-screen .section-label coin-metal gradient (~1–1.05rem);
+  bump .settings-screen .settings-tab / active gold.
+
+SUCCESS
+- Classic locked row gone; Classic Felt default green remains.
+- Settings OWNED FELTS / tabs bigger shinier gold (scoped under .settings-screen).
+- Build OK; tar ready for preview.

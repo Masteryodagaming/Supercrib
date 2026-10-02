@@ -1,0 +1,40 @@
+Trash Toss reaction emote deploy (2026-09-16 AT ~08:37)
+
+Id: trash_toss
+Glyph send: "trash toss"
+Label: Trash Toss
+Unlock: Dummy/Tester ONLY (isEmojiTestDummy / BOARD_SKIN_TEST_UID / joshuamilliea@icloud.com)
+  - Owner (j0shwa) does NOT auto-get trash_toss
+  - Not in STORE_TEASER_EMOJIS / SUPER_COIN_SHOP
+  - mad_finger still Dummy|Owner via canUseMadFinger
+
+Assets:
+  public/reactions/trash_toss.png              (collection icon = mid/hold f2; ?v=2)
+  public/reactions/anim/trash_toss/f1.png      (crouch windup)
+  public/reactions/anim/trash_toss/f2.png      (mid hold)
+  public/reactions/anim/trash_toss/f3.png      (peak throw)
+  public/reactions/anim/trash_toss/f4.png      (follow-through settle — NEW)
+  + 00_windup.png / 01_hold.png / 02_peak.png / 03_settle.png + meta.json
+Anim: trashTossAnimMeta — [120, 180, 350, 550] ends on f4 settle, total 1200ms
+  ANIM_V_TRASH=2, frameCount=4, durationMs=1200
+  ReactEmoji.tsx trash_toss duration fallback: 1200
+
+Box artifacts ready:
+  /workspace/supercrib-dist.tar.gz  (flat tar of dist/)
+  /workspace/supercrib/dist/        (built; index.html at dist root)
+
+MSI path (machineId b8a670af-0b3a-4878-86f4-8b98e0731cbc):
+  1) CopyFromBox /workspace/supercrib-dist.tar.gz
+       -> C:\Users\J0shw\Downloads\supercrib-dist.tar.gz
+  2) Extract into C:\Users\J0shw\Downloads\supercrib\supercrib\dist
+       (replace contents; flat archive — extract so index.html lands in dist/)
+  3) cd C:\Users\J0shw\Downloads\supercrib\supercrib
+     npx.cmd firebase deploy --only hosting
+     npx.cmd firebase hosting:channel:deploy desktop-preview
+
+Expected:
+  https://supercrib241-baba2.web.app
+  + desktop-preview channel URL from firebase output
+
+NOTE: This subagent has no cursor MCP (CopyFromBox/ListMachines).
+Parent must run CopyFromBox + MSI firebase deploy.

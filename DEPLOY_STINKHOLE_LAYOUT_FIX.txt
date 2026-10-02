@@ -1,0 +1,47 @@
+StinkHole layout fix — trap banner no longer pushes / clips the table
+Date: 2026-09-18 ~20:35 ADT (America/Halifax)
+Tree: /workspace/supercrib
+
+SYMPTOM (iPhone Safari, tournament + StinkHole)
+- When someone hit 240 (StinkHole), the red "… in the StinkHole — only last-card-31 wins"
+  banner sat in document flow and ate vertical height.
+- `.table` is a fixed-height flex column with `.table-mid-zone { overflow: hidden }`,
+  so the extra strip squeezed the mid zone and clipped play-pile / starter / hand
+  on phone portrait (Safari chrome + PTT made it worse). Normal non-trap play was fine.
+
+FIX
+- Make the in-table StinkHole strip an overlay (same idea as `.message`), so it never
+  consumes flex height. ShowOverlay trap banners stay in-flow.
+- Add `.table.has-trap` when either seat is trapped and winner is null.
+- Shift the turn `.message` down under the strip; small padding on opponent
+  `.section-label` so cards stay readable under the float.
+- Pegging + has-trap: mid-zone `overflow-y: visible` and mid-play-row `flex-shrink: 0`
+  so COUNT / play pile stay above the hand.
+- Compact / tablet media tweaks for strip + message tops.
+- Pegboard hole math untouched (paint-only / CSS only).
+
+FILES
+- src/ui/Table.tsx   (has-trap class on .table)
+- src/ui/styles.css  (.table > .banner.trap overlay + has-trap rules)
+
+VERIFY
+- npm test   → 431 passed
+- npm run build → OK
+
+DEPLOY
+- Live: https://supercrib241-baba2.web.app
+- desktop-preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+
+HAND RESTORE
+- Skipped (optional per user); restart the hand if needed.
+
+RETEST STEPS
+1. Hard-refresh both phones (live or desktop-preview) — pull-to-refresh or clear tab.
+2. Start / resume any match; play until one seat is on exactly 240 (StinkHole).
+3. On iPhone Safari portrait: confirm
+   - Red StinkHole strip is visible under SUPERCRIB / phase badge
+   - Play pile (COUNT cards), starter corner, and your hand are all visible & tappable
+   - Pegboard scores still show (incl. lock on 240); Quit still works
+4. Rotate / try tablet portrait: same — strip overlays, does not shove hand off-screen.
+5. Sanity: a normal mid-game (nobody on 240) looks unchanged vs pre-fix.
+6. Optional: vs AI, force trap by scoring to 240 and peg — layout should match online.

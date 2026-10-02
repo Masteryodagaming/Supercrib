@@ -1,0 +1,103 @@
+Side live chat — lobby Connect voice (carry into table) — desktop-preview ONLY
+Date: 2026-09-20 ~13:24 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Project: supercrib241-baba2
+
+Ask
+---
+Josh frustrated: "were still not connected. is there a simplier way… once theyre
+in lobby it connects chat there? … alot of back and forth and we aint getting
+anywhere". Stop patching mid-table Join signaling maze. Replace UX with
+lobby-time voice connect. Preview only. Live untouched.
+
+New simple design (shipped)
+---------------------------
+1) Online lobby (both seats connected): clear **Connect voice** control.
+2) Both opt in → WebRTC once in lobby (minimal path):
+   - Seat 0 offers once when both lobby-voice-ready
+   - Other seat answers once (offer.from !== mySeat)
+   - Trickle ICE; no answer wipe on offer retry; no ready-without-session;
+     publish SDP immediately (no gather-wait) — kept from prior hard fixes
+3) Green Live in lobby → **same session carries into the table** (no tear-down
+   on Play / cut / discard / Table remount). Leave only on Quit / Leave room /
+   Disconnect voice.
+4) Table: compact green/red Live + Disconnect. Mid-hand Join no longer the
+   primary path (fallback Connect only if lobby was skipped).
+5) VAD once live. VOICE_PTT_ENABLED stays false.
+6) Hostname gate unchanged — chat OFF on live hosts.
+
+What we simplified / removed
+----------------------------
+- Removed reliance on mid-hand "Join live chat" as the primary connect UX.
+- Stopped disposing the PeerConnection on React effect cleanup while still
+  joined (Table remounts / StrictMode / phase changes were killing the PC).
+- Module-level lobby voice hold (`lobbyVoice.ts`) owns start/stop above Table.
+- Lobby is now the place to Connect; table is status + Disconnect.
+- Competing mid-table Join maze bypassed for the happy path (not two fighting
+  systems — one session, lobby-first).
+
+Hard fix (files)
+----------------
+1) src/multiplayer/lobbyVoice.ts (NEW)
+   - shouldOfferOnceWhenBothLobbyReady / shouldAnswerOnceWhenOfferFromOther
+   - shouldCarryVoiceSessionIntoTable / shouldDisposeVoiceOnEffectCleanup
+   - adoptOrCreateLobbyVoiceSession / releaseLobbyVoiceSession (module hold)
+
+2) src/multiplayer/voicePtt.ts
+   - setCallbacks() + isDisposed() so React can rebind without new PC
+
+3) src/multiplayer/useSideLiveChat.ts
+   - Uses lobby hold; effect cleanup does NOT dispose while still joined
+   - Reused PC: announceReady + kickNegotiate only (no recreate offer maze)
+
+4) src/ui/OnlineLobby.tsx + styles.css
+   - Connect voice block when both seats connected (+ preview debug line)
+
+5) src/ui/SideLiveChatButton.tsx / Table.tsx / App.tsx
+   - Labels: Connect voice / Live / Disconnect
+   - App enables voice in online lobby OR online match
+   - Quit / Leave room call sideLiveChat.leave + cleanupSideLiveChatOnLeave
+   - Table compact Live; allowConnect only if lobby Connect was skipped
+
+6) Tests: lobbyVoice.test.ts (+ sideLiveChatUi contract)
+
+Unchanged
+---------
+- VOICE_PTT_ENABLED = false
+- SIDE_LIVE_CHAT hostname gate (preview/localhost only; live OFF)
+- Cut / COUNT / forgot-password intact
+- Live hosting NOT deployed
+
+Tests / build
+-------------
+- npm test — 62 files / 584 tests passed
+- npm run build — passed
+  - dist/assets/index-BZgXoMFs.js (955.95 kB)
+  - dist/assets/index-DfIg-i_g.css (183.71 kB)
+
+Deploy
+------
+- firebase hosting:channel:deploy desktop-preview --expires 30d
+
+Deploy result (2026-09-20 13:24 ADT)
+------------------------------------
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  expires ~2026-10-20 13:24 ADT
+  serves index-BZgXoMFs.js / index-DfIg-i_g.css
+  (bundle contains "Connect voice", lobbyVoice)
+- Live UNTOUCHED: https://supercrib241-baba2.web.app
+  still index-BG_0NujD.js / index-QmjC4Aj0.css
+
+Exact retest for Josh (lobby first — two humans on preview)
+-----------------------------------------------------------
+1. Hard-refresh BOTH devices on preview.
+   Network must show index-BZgXoMFs.js (not older side-chat bundles).
+2. Create / Join room → wait until **Both here**.
+3. BOTH tap **Connect voice** (allow mic). Do this in the lobby — before Play.
+4. Within ~2–4s both should show green **Live** + debug line with
+   readyMe=1 peerReady=1 bothReady=1 offer=1 answer=1 ice=connected
+   (or conn=connected). Speak — peer hears (VAD, no Hold).
+5. Host taps **Play** → cut → deal → table.
+6. Table header shows compact green **Live** (still linked). Speak again —
+   still hear each other. No mid-crib Join required.
+7. Disconnect / Leave room / Quit tears voice down. Live site: no Connect voice.

@@ -1,0 +1,42 @@
+AVATARS shelf open + SuperCrib Father in Store
+Date: 2026-09-18 ~09:20 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Tar: /workspace/supercrib-dist.tar.gz (flat tar of dist/)
+
+STORE (src/ui/Store.tsx + src/profile/coins.ts)
+- AVATARS shelf open like BOARD/FELT/EMOJI: real Buy via buyShopItemOnProfile,
+  Owned state, busy/error handling (buyError under AVATARS)
+- STORE_AVATAR_ITEMS = SUPER_COIN_SHOP.filter(kind === 'avatar')
+- STORE_TEASER_AVATARS = [] (locked teaser UI removed)
+
+AVATAR CATALOG (buyable)
+- avatar_dangler / Spade Cutter / Grandma / Uncle / Chief — 200 SC each
+- avatar_collector / Garbage Man / Slugger — 1000 SC each
+- avatar_supercrib_father — The SuperCrib Father — glyph 👔 — 1000 SC
+  imageSrc /avatars/supercrib-father.png?v=1 — unlockId supercrib_father
+- avatar_gold_elite — Gold Peg Elite — 50 SC (glyph only)
+- NOT sold: tester_god, first_ever_winner (prize-only)
+- Crib Master stays owner-only builtin (not in SUPER_COIN_SHOP)
+
+PICKER (src/profile/avatars.ts)
+- getSelectableAvatars keys ownership off unlockId ?? id
+  so buy Father → ownedAvatarIds includes supercrib_father → picker shows it
+
+EMOJI SHELF
+- Kept Clash specials (all 200 SC): Mad Finger, Trash Toss, Spade Wizard,
+  Grandma Peggy, Mad Father
+- Removed stub packs emoji_sparkle / emoji_fire (no unlockId/art)
+- No Peg/Crib/Double SKUNK stubs added
+
+BOARD / FELT
+- Unchanged (Arena/Gold/ZF/Dumpster boards; ZF + Dumpster felts)
+
+TESTS
+- coins/avatars/avatarGiftInbox updated (Father now in shop; teasers empty)
+- Full suite: 419 passed; npm run build OK
+
+DEPLOY
+- Live: https://supercrib241-baba2.web.app
+- desktop-preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (expires 2026-10-18 ~03:03 ADT)
+- Father art live: /avatars/supercrib-father.png?v=1 → 200

@@ -1,0 +1,12 @@
+{
+  "id": "skunk",
+  "durationMs": 1000,
+  "frames": [
+    "f0.png",
+    "f1.png",
+    "f2.png",
+    "f3.png",
+    "f4.png",
+    "f5.png"
+  ]
+}

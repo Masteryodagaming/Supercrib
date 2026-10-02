@@ -1,0 +1,76 @@
+COUNT gap + real CC0 card/peg WAV SFX — 2026-09-19 ~22:33 ADT
+
+Ask
+---
+1. COUNT badge overlaps / kisses top of player hand cards during pegging.
+   Fix so COUNT sits clearly ABOVE the hand with a small gap (no overlap with
+   hand, crib, or starter). Keep COUNT hug-content / grow (max-content).
+2. Replace synth card/peg SFX with real CC0 WAVs already in public/sfx/.
+   Keep go/win synth. Settings sound mute + unlock-on-gesture. Same exports.
+   Desktop-preview ONLY — do NOT promote to live. VOICE_PTT stays false.
+   Do not reintroduce felt stretch (100% 100%) or desktop shell warp.
+
+COUNT CSS (src/ui/styles.css)
+-----------------------------
+Pegging mid-zone / hand stacking gap (phone + desktop Chrome):
+- .table.phase-pegging .table-mid-zone padding-bottom: 0.9rem → 1.55rem
+- .table.phase-pegging .mid-play-row margin-bottom: 0.1rem → 0.45rem
+- .table.phase-pegging .hand-area padding-top: 0.55rem → 0.95rem (transform:none)
+- crib/starter corner-bottom: 7.8rem → 8.6rem
+Phone (max-width 520 / max-height 780):
+- mid-zone padding-bottom 1.05rem → 1.65rem; hand padding-top 0.7rem → 1.1rem
+- corners 8.4rem → 9.2rem
+Desktop @900:
+- pegging mid-zone padding-bottom 1.75rem; hand padding-top 1.15rem
+- corners 9.4rem; mid-play-row margin-bottom 0.5rem
+Tablet hover:none @900 (was crushing gap):
+- pegging mid-zone padding-bottom 0.35rem → 1.45rem
+KEPT: COUNT play-area width:max-content / flex:0 1 auto (hug + grow);
+      hand z14; mid pointer-events none; felt 100% auto (no warp).
+
+SFX (src/audio/gameSfx.ts)
+--------------------------
+Prefer fetch + AudioContext.decodeAudioData for public/sfx/ WAVs; cache
+buffers; play with gain. Synth fallback if a WAV fails so the game never breaks.
+Map:
+- playShuffle → card_shuffle.wav / card_shuffle_bridge.wav (alternate)
+- playDeal / playCard → card_play1.wav / card_play2.wav (vary; deal quieter)
+- playPeg → peg1/2/3.wav (random)
+- playGo / playWin → keep soft sine synth (no assets)
+- playCut optional → card_cut.wav
+settings.sound mute + unlock-on-gesture unchanged.
+CREDITS.txt kept (OpenGameArt CC0: BMacZero playing-card + Wuzzy wooden dice).
+
+Files
+-----
+- src/ui/styles.css
+- src/ui/__tests__/countHandGap.css.test.ts (new)
+- src/audio/gameSfx.ts
+- public/sfx/README.txt
+- public/sfx/CREDITS.txt (unchanged)
+- DEPLOY_REAL_CARD_SFX.txt (this note)
+- src/multiplayer/voiceConfig.ts (VOICE_PTT_ENABLED = false, unchanged)
+
+Verify
+------
+1. Hard-refresh desktop-preview.
+2. Vs AI pegging: COUNT sits clearly above hand with a gap; no overlap with
+   hand / crib / starter; box still hugs pile and grows/wraps.
+3. Hear real shuffle / deal slap / peg wood (not plain beeps); Settings mute works.
+4. No Hold/PTT voice UI; felt not stretched.
+
+Deploy (hard constraint)
+------------------------
+- npm test — 54 files / 493 tests passed
+- npm run build — passed (index-BKYHyC_M.css / index-Be-oBvQj.js)
+- firebase hosting:channel:deploy desktop-preview ONLY (not live)
+
+Deploy results
+--------------
+- npm test — 54 files / 493 tests passed
+- npm run build — passed (index-BKYHyC_M.css / index-Be-oBvQj.js)
+- desktop-preview channel deployed 2026-09-19 ~22:33 ADT
+- Preview serves index-BKYHyC_M.css / index-Be-oBvQj.js
+- Live untouched (not promoted)
+- Preview URL: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (channel expires ~2026-10-19 22:33 ADT)

@@ -1,0 +1,48 @@
+Overclaim steal ×2 (Josh rule fix) — 2026-09-19 ~21:08 ADT
+
+Rule
+----
+Competitive overclaim snap-back: subtract (claimed − trueRaw) × showMultiplier.
+- Non-spade SuperCrib starter → steal ×2 (same as show ×2).
+- Spade starter → raw steal only (×1).
+Show ×2 bonus on exact/overclaim-snapped raw is unchanged; only the penalty
+was under-applied before (raw steal while show still ×2’d).
+
+Josh example (start 6, hand raw 26, claimed 28, non-spade):
+- Wrong (old): +26 raw, +26 ×2, −2 steal → 56
+- Correct:     +26 raw, +26 ×2, −4 steal (2×2) → 54
+- Spade:       +26 raw, no ×2, −2 steal only
+
+Implement
+---------
+- resolveClaim stays RAW delta (claimed − true).
+- applyCompetitiveBucket multiplies by bd.multiplier when applying penalty
+  (and returns appliedOverclaimPenalty for the claim log).
+- finalizeCompetitiveStep logs the applied (× multiplier) penalty.
+- Rules blurb: overclaim snap-back is steal ×2 unless spade.
+- ShowOverlay claim log: “Overclaim −N (steal ×2)” when penalty = 2× raw steal.
+
+Tests
+-----
+- Non-spade overclaim (raw+4): logged penalty 8, score +total −8.
+- Spade overclaim (raw+4): logged penalty 4, score +raw −4.
+- resolveClaim unit still returns raw steal 4 for (8, 12).
+
+Deploy (hard constraint)
+------------------------
+- npm test — 49 files / 468 tests passed
+- npm run build — passed
+- Deployed desktop-preview ONLY (firebase hosting:channel:deploy desktop-preview /
+  project supercrib241-baba2). Live intentionally NOT promoted.
+- Preview URL:
+  https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (channel expires ~2026-10-19 15:57 ADT)
+- Live NOT promoted.
+
+Key files
+---------
+- src/engine/competitiveScoring.ts (comments; resolveClaim still raw)
+- src/engine/supercrib.ts (applyCompetitiveBucket × multiplier)
+- src/engine/__tests__/competitiveScoring.test.ts
+- src/ui/Rules.tsx
+- src/ui/ShowOverlay.tsx

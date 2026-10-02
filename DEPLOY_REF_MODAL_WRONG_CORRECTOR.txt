@@ -1,0 +1,69 @@
+Ref modal + wrong-corrector penalty — 2026-09-19 ~23:29 ADT
+
+Ask
+---
+Josh’s Competitive flow (desktop-preview only; do NOT promote live; no voice/chat):
+1. Claimant announces hand → opponent Approve or Adjust.
+2. On Adjust → clear Ref modal (not a one-line toast) before continuing.
+3. If adjuster (corrector) is wrong → penalize adjuster (peg).
+4. Then existing Muggins step if underclaim, showing points available.
+5. Modal shows Original hand, Opponent adjusted to (or Approve path skips),
+   True, Verdict. Keep blank Adjust keypad, original hand in HandBlock,
+   sticky Approve/Adjust, hand wording. Online + AI Dummy2.
+
+Penalty rule (exact)
+--------------------
+Wrong-corrector peg when Adjust ≠ true raw:
+  penalty = |adjusted − trueRaw| × showMultiplier
+  (×2 non-spade starter, ×1 spade — same shape as overclaim steal).
+Applied to the **adjuster** (review respondent), not the claimant.
+- Adjuster exact (adj === true) → 0 (no wrong-corrector).
+- Claimant already exact + wrong Adjust → keep claimant; still penalize adjuster.
+- Neither exact → keep closer (claimant on tie); if adjuster still ≠ true,
+  still penalize adjuster by the rule above.
+Approve path: no Ref modal, no wrong-corrector penalty.
+
+Ref modal (blocking pendingRef)
+-------------------------------
+After Adjust resolves vs true raw (kept number + any overclaim/underclaim peg):
+  Original hand: N
+  Opponent adjusted to: M
+  True: T
+  Kept: K
+  Verdict: e.g. “Adjuster right”, “Claimant was already exact — adjuster wrong,
+    penalized −P”, “Neither exact — kept claimant/adjuster (closer); …”
+  Wrong-corrector penalty line when P > 0.
+Continue dismisses pendingRef → then Muggins Accept / Muggins +missed (if any),
+or next claim. AI does not auto-advance past pendingRef.
+
+How to test on preview
+----------------------
+1. Hard-refresh desktop-preview.
+2. Competitive vs Dummy2: announce wrong → Adjust to true → Ref modal
+   “Adjuster right” → Continue → exact peg; no adjuster penalty.
+3. Announce exact → Adjust wrong → Ref “already exact… penalized −P” →
+   adjuster score drops by |adj−true|×mult; Continue.
+4. Underclaim path after wrong Adjust: Ref first → Continue to Muggins →
+   “Muggins +N available”.
+5. Approve path: no Ref modal / no wrong-corrector.
+6. Online Competitive: same seat-gated review + shared pendingRef.
+
+Deploy (hard constraint)
+------------------------
+- npm test — 55 files / 522 tests passed
+- npm run build — passed (index-Ds6xxoUC.css / index-Ddrw1Swh.js)
+- firebase hosting:channel:deploy desktop-preview ONLY (not live)
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (channel expires ~2026-10-19 23:21 ADT)
+- Live untouched (not promoted)
+- VOICE_PTT_ENABLED left false
+
+Key files
+---------
+- src/engine/competitiveScoring.ts (wrongCorrectorPenaltyRaw, buildRefVerdict, adjusterWrong)
+- src/engine/supercrib.ts (pendingRef, adjustShowClaim penalty, acknowledgeCompetitiveRef)
+- src/engine/__tests__/competitiveScoring.test.ts
+- src/ui/ShowOverlay.tsx (Ref modal), styles.css, Rules.tsx
+- src/ui/App.tsx, Table.tsx
+- src/multiplayer/serialize.ts (+ serialize test)
+- DEPLOY_REF_MODAL_WRONG_CORRECTOR.txt (this note)

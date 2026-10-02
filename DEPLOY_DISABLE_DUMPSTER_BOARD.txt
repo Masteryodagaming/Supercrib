@@ -1,0 +1,23 @@
+C&J Dumpster BOARD emergency disable — 2026-09-16 ADT
+
+Build behavior:
+- `cj_dumpster` remains in source/art for legacy migration, but is locked.
+- `canUseCjDumpsterBoard` always returns false.
+- Effective ownership filters `cj_dumpster`; legacy settings normalize to `default`.
+- Zero Forge remains available to its existing Dummy/Owner gate.
+- C&J Dumpster FELT remains unchanged.
+- The Super Coin board purchase was removed from the store catalog.
+- Existing art files remain on disk but cannot be selected or rendered through board resolution.
+
+Known RTDB cleanup targets:
+- Dummy uid: cHYLDPXD6cSdZCtNmxv7hmg0VSI2
+  Strip `cj_dumpster` from `ownedBoardIds` and set `settings.board` to `default`; retain the C&J Dumpster FELT.
+- Joe Jay uid: 1b99N2vTZgfWC6xBCOlCp5OJDSa2
+  Source: prior `DEPLOY_CJ_DUMPSTER.txt`; email joejacobfrancis@hotmail.ca.
+  Strip `cj_dumpster` from `ownedBoardIds` and set `settings.board` to `default`.
+
+Artifacts:
+- `/workspace/supercrib-dist.tar.gz`
+- `/workspace/disable-dumpster-boards.json`
+
+Deployment: DO NOT firebase deploy. Use the tar artifact for the live hosting update.

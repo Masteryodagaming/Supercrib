@@ -1,0 +1,13 @@
+C&J Dumpster visible peg holes — 2026-09-16
+
+Change:
+  Restored visible dark SVG hole-dot, hole-trap, and hole-finish fills on the C&J Dumpster board skin.
+  Kept path strokes and decade/text labels hidden so the Dumpster art remains the painted track.
+  Pegboard geometry and the existing plank ellipse radial-gradient were not changed.
+
+Build:
+  npm run build
+  Flat archive: /workspace/supercrib-dist.tar.gz
+
+Deploy:
+  No Firebase deploy performed.

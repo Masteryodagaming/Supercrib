@@ -1,0 +1,78 @@
+Competitive mode (manual count + muggins) — 2026-09-19 ~16:33 ADT
+
+Feature (Dummy vs AI only; no live online/tournament force-on)
+----------------------------------------------------------------
+- scoringMode: 'auto' | 'competitive' on createGame / vs-AI path.
+- BOTH modes are SuperCrib show scoring (Spade ×2 when starter isn’t a
+  spade; Spade starter = raw). Competitive does NOT use classic 121 /
+  classic-crib totals.
+- Only counting UX differs:
+  - Normal (auto): engine auto-counts
+  - Competitive: players claim hand then crib (pone → dealer → crib) + Muggins
+- **Claim truth = RAW** (pre–Spade×2). Typed claim / overclaim snap /
+  muggins miss all compare to scoreHand.raw — never the doubled total.
+- After an exact (or overclaim-snapped) raw resolution, SuperCrib ×2 still
+  pegs as a **separate** show step on a non-spade starter. Underclaim pegs
+  claimed raw only (no ×2); muggins = raw − claim.
+- Overclaim: peg raw (+ ×2 if applicable), then −(claim − raw).
+- AI: honest **raw** claims; auto-takes muggins on human underclaims;
+  engine auto-catches overclaims.
+- StinkHole / 241 applyPoints / trap rules unchanged.
+- VOICE_PTT_ENABLED left false (voice PTT stays hidden).
+
+Josh UI — claim keypad (this deploy)
+------------------------------------
+- Removed tall gold preset chips (0,2,4,…,24).
+- Compact claim display + 0–9 numeric keypad (C clear, ⌫ backspace) +
+  Confirm claim. −/+ steppers dropped (keypad is the input).
+- Dummy Competitive gate + chooser layout unchanged.
+- Desktop board-size CSS (--board-w clamps) left intact (other agent work).
+
+Josh UI — earlier chooser tweak (still in preview)
+--------------------------------------------------
+- Scoring mode chooser: mode name on its own line; description under name.
+  Normal → (auto count); Competitive → (count your own & Muggins).
+- Rules: Competitive blurb now states count = raw; ×2 not typed.
+
+How Dummy starts a Competitive AI game
+--------------------------------------
+1. Open desktop-preview (hard-refresh).
+2. Sign in as Dummy: joshuamilliea@icloud.com
+   (uid cHYLDPXD6cSdZCtNmxv7hmg0VSI2 also gates).
+3. Find Match → Random AI → Scoring mode → Competitive → pick difficulty.
+4. Non-Dummy accounts only see Normal path (no Competitive chooser).
+
+How to test over / under claims + Spade ×2
+------------------------------------------
+- At show: cards visible, true totals hidden until claimed.
+- Type the **raw** hand/crib count on the keypad (not the ×2 board total).
+- Non-spade starter: badge still shows ×2 show — after exact raw claim,
+  board pegs raw then ×2 bonus (same net as Normal).
+- Spade starter: claim raw; badge spade · raw; no ×2 bonus.
+- Overclaim: board snaps to true raw (+×2), then −(claim − raw).
+- Underclaim: claimed raw pegs (no ×2); Accept leaves miss, or Muggins
+  gives missed raw to opponent (AI will Muggins you).
+- After pone/dealer/crib done → Next deal as usual.
+
+Deploy (hard constraint)
+------------------------
+- npm test — 45 files / 447 tests passed
+- npm run build — passed
+- Deployed desktop-preview ONLY (firebase hosting:channel:deploy desktop-preview /
+  project supercrib241-baba2). Live intentionally NOT promoted.
+- Preview URL:
+  https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (channel expires ~2026-10-19 15:57 ADT)
+- Live NOT promoted.
+
+Key files
+---------
+- src/engine/competitiveScoring.ts
+- src/engine/supercrib.ts (trueRawForStep; ×2 peg after exact/overclaim)
+- src/engine/scoreHand.ts
+- src/engine/ai.ts
+- src/engine/__tests__/competitiveScoring.test.ts
+- src/ui/ShowOverlay.tsx, claimKeypad.ts, Rules.tsx, styles.css
+- src/ui/__tests__/claimKeypad.test.ts
+- src/ui/Home.tsx, App.tsx (untouched this pass except prior chooser)
+- src/multiplayer/voiceConfig.ts (VOICE_PTT_ENABLED = false, unchanged)

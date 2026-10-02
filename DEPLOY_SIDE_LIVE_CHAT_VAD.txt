@@ -1,0 +1,83 @@
+Side live chat + VAD (tester track) — desktop-preview ONLY
+Date: 2026-09-19 ~23:49 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Project: supercrib241-baba2
+
+Ask
+---
+Josh: "lets test chat with testers now. not live. so make that button on the
+side \"join live chat\" once in have Live with a green light and red when its
+not connected. once in i want it to be voice activated not push to touch"
+
+CRITICAL
+--------
+- Deployed to desktop-preview ONLY. Live hosting was NOT promoted.
+- Live remains Competitive + SFX pack (index-BYnzlayH.js / index-Ds6xxoUC.css).
+- Legacy table Hold-to-talk stays OFF (VOICE_PTT_ENABLED = false).
+
+What shipped (preview)
+----------------------
+1. Side button **"Join live chat"** on the left play rail (not the old mid-zone
+   Hold PTT control).
+2. After Join: status **"Live"** with **green** indicator when WebRTC is live;
+   **red** when joining / disconnected / failed / not linked.
+3. **Voice-activated (VAD)** once in — mic transmits while speaking, muted when
+   quiet. No hold-to-talk required. Leave returns to Join.
+4. Join click is the Safari/iPad mic + remote-audio unlock gesture.
+5. Online multiplayer only (room peers); reuses existing WebRTC + RTDB voice
+   signaling (rooms/{code}/voice/).
+
+Feature flag
+------------
+- `SIDE_LIVE_CHAT_ENABLED = true` in src/multiplayer/voiceConfig.ts (preview track).
+- Runtime gate `isSideLiveChatEnabled(hostname)`:
+  - ON: `--desktop-preview-` host, localhost, 127.0.0.1
+  - OFF: live hosts (supercrib241-baba2.web.app / .firebaseapp.com) even if the
+    compile flag were true — belt-and-suspenders so a mistaken live promote
+    would still hide chat.
+- `VOICE_PTT_ENABLED = false` (unchanged) — table Hold-to-talk stays hidden.
+
+UI summary
+----------
+- Not joined → **"Join live chat"**
+- Joined + peer live → **"Live"** + green dot (+ Leave)
+- Joined + not connected → **"Live"** / Connecting… + red dot (+ Leave)
+- VAD drives track.enabled + talking/{seat}; Opp speaking hint when peer talks
+
+Files touched
+-------------
+- src/multiplayer/voiceConfig.ts       — SIDE_LIVE_CHAT_ENABLED + host gate
+- src/multiplayer/voiceVad.ts          — RMS / hangover VAD + monitor
+- src/multiplayer/voicePtt.ts          — adoptMicStream / getLocalStream
+- src/multiplayer/useSideLiveChat.ts   — join/leave + VAD lifecycle
+- src/ui/SideLiveChatButton.tsx        — side rail UI
+- src/ui/Table.tsx                     — mount side control
+- src/ui/App.tsx                       — wire hook (online only)
+- src/ui/styles.css                    — .table-side-live-chat / status styles
+- src/multiplayer/__tests__/voiceConfig.test.ts
+- src/multiplayer/__tests__/voiceVad.test.ts
+- src/multiplayer/__tests__/sideLiveChatUi.test.ts
+- DEPLOY_SIDE_LIVE_CHAT_VAD.txt (this note)
+
+Tests / build
+-------------
+- npm test — 58 files / 541 tests passed
+- npm run build — passed
+  - dist/assets/index-CHGQjcU8.js (938.55 kB)
+  - dist/assets/index-DrESPVvs.css (181.06 kB)
+
+Deploy
+------
+- firebase hosting:channel:deploy desktop-preview --expires 30d
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (expires ~2026-10-19 23:49 ADT)
+- Live UNTOUCHED: https://supercrib241-baba2.web.app
+  (still index-BYnzlayH.js / index-Ds6xxoUC.css; no "Join live chat")
+
+How to test (two devices on preview)
+------------------------------------
+1. Hard-refresh desktop-preview on both devices (CDN may cache index.html ~1h).
+2. Host + guest join the same online room and start a match.
+3. Each taps **Join live chat** (allow mic). Red → green when both are linked.
+4. Speak freely (VAD); quiet should mute. Leave → Join again.
+5. Confirm live site has no Join live chat control.

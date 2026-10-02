@@ -1,0 +1,135 @@
+Side live chat STILL CONNECTING — hard fix — desktop-preview ONLY
+Date: 2026-09-20 ~08:31 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Project: supercrib241-baba2
+
+Ask
+---
+Josh (8:22 ADT): "Still this" + "And we're both connected" after the prior
+DEPLOY_SIDE_CHAT_STUCK_CONNECTING.txt deploy. Both in online room / joined
+chat UI, but side live chat stays red CONNECTING (never green Live).
+Do not ship another shallow patch. Prove against real RTDB. Preview only.
+VOICE_PTT_ENABLED=false. Do not regress cut+COUNT.
+
+Proven root cause (live RTDB + ICE probes)
+------------------------------------------
+1) Ready handshake never completed — PRIMARY (blocks SDP entirely)
+
+   Room NCM5X (Dummy vs Dummy2), created 08:20:53 ADT — Josh's retest AFTER
+   the previous "stuck CONNECTING" deploy:
+
+     seats[0]=Dummy connected=true  lastSeen≈create only (stale)
+     seats[1]=Dummy2 connected=true lastSeen fresh
+     voice.ready = [null, true]     ← seat 0 NEVER wrote ready
+     voice.offer / answer / ice     ← ALL ABSENT
+
+   UI CONNECTING maps to status==='connecting' / joiningBusy
+   (deriveSideLiveChatUi). With bothReady=false the copy is
+   "Waiting for opponent…" — never reaches Linking / Live.
+
+   Why seat 0 never wrote ready (code path):
+   - start() AWAITED buildVoiceIceServers() then AWAITED host
+     update(offer:null, answer:null, …) BEFORE announceReady().
+   - Side chat only called announceReady() after start() returned.
+   - Any stall/hang on TURN HMAC or host SDP clear left the host UI on
+     CONNECTING (onStatus already fired) with RTDB ready/[0] never set.
+   - Guest path only clears own ICE → could announceReady → ready[1]=true.
+   - Shape [null,true] matches "only seat 1 ever wrote voice/*".
+
+   bothConnected was NOT the gate: session.connection==='connected' for
+   both seats (connected:true). Join requires bothConnected; they joined.
+
+2) Dead TURN from prior "fix" — SECONDARY (ICE after both-ready)
+
+   Chrome ICE gather from this box (CDP):
+     staticauth.openrelay.metered.ca → ICE error 701 host lookup, relay=0
+     openrelay.metered.ca / relay.metered.ca / global.relay.metered.ca → 701
+     freeturn.net → NXDOMAIN (prior deploy)
+   Google/Cloudflare STUN → srflx OK.
+
+   So even when both ready + offer/answer exist, symmetric NAT had no
+   working relay. Open Relay static-auth HMAC was a paper fix.
+
+Hard fix
+--------
+1) voicePtt.ts
+   - PC created immediately with STUN only (no await TURN/HMAC).
+   - bindSignaling before any RTDB tidy; resetSignalingSoft is
+     fire-and-forget and clears ONLY this seat's ICE (does NOT null
+     offer/answer — that raced early ready and killed first offers).
+   - TURN upgrade via setConfiguration async (FreeSTUN free:free +
+     optional VITE_METERED_TURN_API_URL fetch, 2.5s abort).
+   - REMOVED dead staticauth.openrelay / openrelayprojectsecret.
+   - publishSeatVoiceReady(code, seat) — write ready/{seat}=true with
+     no PC required.
+   - maybeNegotiate requires micAttached (early ready OK; empty-sender
+     offers blocked → no recvonly answers).
+   - Guest bumps renegotiate when bothReady + mic already on.
+
+2) useSideLiveChat.ts
+   - After Join getUserMedia: publishSeatVoiceReady IMMEDIATELY, then
+     setJoined(true). Ready no longer waits on start()/TURN/SDP clear.
+   - Clear joiningBusy whenever shouldRun is false (seat/code flicker
+     previously left CONNECTING forever with no session).
+
+Unchanged (as required)
+-----------------------
+- VOICE_PTT_ENABLED = false
+- SIDE_LIVE_CHAT_ENABLED + isSideLiveChatEnabled(hostname)
+  ON: --desktop-preview- / localhost / 127.0.0.1
+  OFF: live hosts
+- Cut+COUNT CSS tests still pass (meta z12, mid-zone 18, overflow
+  visible, cut-watching full opacity)
+
+Files
+-----
+- src/multiplayer/voicePtt.ts
+- src/multiplayer/useSideLiveChat.ts
+- src/multiplayer/__tests__/voicePtt.test.ts
+- DEPLOY_SIDE_CHAT_STILL_CONNECTING.txt (this note)
+
+Tests / build
+-------------
+- npm test — 60 files / 554 tests passed
+- npm run build — passed
+  - dist/assets/index-Ba3tA8EE.js (944.41 kB)
+  - dist/assets/index-QmjC4Aj0.css (182.21 kB)
+
+Deploy
+------
+- firebase hosting:channel:deploy desktop-preview --expires 30d
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (expires ~2026-10-20 08:31 ADT)
+  serves index-Ba3tA8EE.js / index-QmjC4Aj0.css
+  (bundle contains freestun.net; no staticauth.openrelay)
+- Live UNTOUCHED: https://supercrib241-baba2.web.app
+  still index-BG_0NujD.js / index-QmjC4Aj0.css
+
+Optional (hard NAT)
+-------------------
+If two devices still fail AFTER ready=[true,true] + offer+answer exist
+but ICE never goes live, set in .env / hosting env:
+
+  VITE_METERED_TURN_API_URL=https://<app>.metered.live/api/v1/turn/credentials?apiKey=...
+
+(from a free Metered Open Relay account) and redeploy preview.
+
+Exact retest (two devices on preview)
+-------------------------------------
+1. Hard-refresh preview on BOTH devices (Cmd/Ctrl+Shift+R). Confirm
+   Network shows index-Ba3tA8EE.js.
+2. Online match (Dummy/Dummy2 ok). Both seats connected.
+3. Each taps Join live chat (allow mic).
+4. Within ~1–2s RTDB rooms/{CODE}/voice/ready should be [true,true]
+   (or {"0":true,"1":true}), then offer+answer appear, then green Live.
+5. Speak (VAD) — peer hears without PTT. Leave → Join again works.
+6. Live site: no Join live chat control (hostname gate).
+
+RTDB proof checklist if it fails again
+--------------------------------------
+Compare rooms/{CODE}/voice:
+  - ready both true? If one null/false → still handshake (capture seat).
+  - offer + answer present? If ready both true but no offer → host
+    negotiate/micAttached.
+  - ice/{0} and ice/{1} candidate lists? Look for typ relay vs only host.
+  - If offer/answer/ICE exist but UI CONNECTING → connectionState path.

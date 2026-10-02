@@ -1,0 +1,19 @@
+Boot flow deploy manifest (Zero Forge Labs splash)
+
+CopyFromBox these to MSI machineId b8a670af-0b3a-4878-86f4-8b98e0731cbc
+  /workspace/supercrib/src/ui/Splash.tsx
+    -> C:\Users\J0shw\Downloads\supercrib\supercrib\src\ui\Splash.tsx
+  /workspace/supercrib/src/ui/App.tsx
+    -> C:\Users\J0shw\Downloads\supercrib\supercrib\src\ui\App.tsx
+  /workspace/supercrib/src/ui/Login.tsx
+    -> C:\Users\J0shw\Downloads\supercrib\supercrib\src\ui\Login.tsx
+  /workspace/supercrib/src/ui/styles.css
+    -> C:\Users\J0shw\Downloads\supercrib\supercrib\src\ui\styles.css
+
+Then on MSI workingDirectory C:\Users\J0shw\Downloads\supercrib\supercrib:
+  npm.cmd run build
+  npx.cmd firebase deploy --only hosting
+
+Expected live URL: https://supercrib241-baba2.web.app
+
+Box build already OK (tsc + vite → dist/assets/index-CGdj5lb0.js).

@@ -1,0 +1,29 @@
+Play side avatars flush to plank edges
+Date: 2026-09-18 ~13:46 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Tar: /workspace/supercrib-dist.tar.gz (flat tar of dist/)
+
+WHAT
+- Side play avatars hugged flush against the gold/maple plank edges instead of
+  sitting centered in wide gutters under/near the emoji rails.
+
+CSS (src/ui/styles.css only — peg hole math / emoji rails / avatar data untouched)
+- .board-plank-with-zoom:
+  - grid-template-columns: 3rem auto 3rem (was minmax(3rem, 1fr) auto minmax(3rem, 1fr))
+  - justify-content: center so plank stays centered without 1fr gutters
+- .board-side-gutter-left: align-items: flex-end (avatar flush to plank left);
+  padding 0; justify-self stretch
+- .board-side-gutter-right: padding 0; ZOOM remains top-right (align-items flex-end)
+- .board-side-gutter-right .board-side-avatar: left: 0; right: auto
+  (was right: 0.06rem which pushed avatar outward toward emoji rail)
+- Rings / sizes / mid-plank vertical position unchanged
+- Desktop @900: 3.4rem auto 3.4rem + justify-content: center
+- Desktop @1100: 3.5rem auto 3.5rem + justify-content: center
+
+BUILD
+- npm run build OK (tsc --noEmit && vite build)
+
+DEPLOY
+- Live: https://supercrib241-baba2.web.app
+- desktop-preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (expires 2026-10-18 ~03:03 ADT)

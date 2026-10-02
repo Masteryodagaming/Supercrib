@@ -1,0 +1,68 @@
+Hand hit-target (crib/starter overlap) — 2026-09-19 ~20:45 ADT
+
+Ask
+---
+Josh (desktop Chrome / desktop-preview): crib + starter overlapping the hand
+a little after pass-2 card bump — can’t click/kick hand cards. Clarified NOT
+a freeze/timer deadlock; pointer/hit-target issue. Shrink crib + starter on
+desktop; keep hand large; raise hand above mid overlays. Preview only.
+
+What overlapped / stole clicks
+------------------------------
+1) Pass-2 desktop sized starter LARGER than hand:
+     @900  starter 78×110 vs hand 74×88
+     @1100 starter 86×120 vs hand 82×98
+   Crib pile stack also grew (62×88 / 66×94). Fixed corner crib/starter and
+   mid-row staging sat over the hand fan (hand also translateY(-10px)).
+2) Stacking: .table-mid-zone z-index 8 > .hand-area z-index 6 — empty mid
+   space intercepted taps even when cards looked reachable.
+3) .fixed-crib-corner .dealer-crib-pile had pointer-events: auto, so the
+   dealer crib corner could steal right-side hand taps when overlapping.
+
+What we shrank (desktop only; hand kept pass-2 size)
+----------------------------------------------------
+@900px:
+  starter (fixed + mid): 78×110 → 52×74
+  crib pile / empty / stack cards: 62×88 → 44×62
+  mid crib staging cards: 44×62
+  hand unchanged: 74×88
+@1100px:
+  starter: 86×120 → 56×78
+  crib pile / stack cards: 66×94 → 48×68
+  mid crib staging: 48×68
+  hand unchanged: 82×98
+Pegboard --board-w clamps left at pass-2. No pegboard hole math / felt warp.
+
+Hit-target / z-index (all breakpoints)
+--------------------------------------
+- .hand-area: z-index 6 → 14 + pointer-events: auto
+- .table-mid-zone: pointer-events: none (empty mid passes through;
+  .board-zoom-toggle already auto; .cut-fan now pointer-events: auto)
+- .fixed-crib-corner .dealer-crib-pile: pointer-events auto → none
+
+Freeze rabbit hole
+------------------
+Dropped per Josh clarification (can’t click hand ≠ stuck timers). No timer /
+competitive-claim / AI-delay changes.
+
+Files
+-----
+- src/ui/styles.css
+- src/ui/__tests__/handHitTarget.css.test.ts (new)
+
+Verify
+------
+1. Hard-refresh desktop-preview in side-by-side Chrome.
+2. Vs AI discard + pegging: crib/starter visibly smaller; hand still large.
+3. Tap every hand card — no dead spots over mid cards / crib corner.
+4. Cut deck still tappable; board Zoom toggle still works.
+5. Phone / iPad (hover:none) layout unchanged.
+
+Deploy (hard constraint)
+------------------------
+- npm test — 46 files / 452 tests passed
+- npm run build — passed (index-2odvCkZw.css / index-LmevBvEY.js)
+- firebase hosting:channel:deploy desktop-preview ONLY
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  serves index-2odvCkZw.css / index-LmevBvEY.js
+- Live intentionally untouched: still index-DwOlaAp5.css / index-OzRiGnDC.js

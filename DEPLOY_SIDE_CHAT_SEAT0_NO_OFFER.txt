@@ -1,0 +1,123 @@
+Side live chat seat0 no offer — durable ready + seat-scoped Leave — desktop-preview ONLY
+Date: 2026-09-20 ~12:33 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Project: supercrib241-baba2
+
+Ask
+---
+Josh screenshot 12:27 ADT (gold evidence): seat 0 host, Leave + CONNECTING,
+debug ready/talking/offer all stalled, toast opponent joined, mic allowed,
+discard·online, picking crib vs Dummy2. Prior LINKING pass (offer retry +
+mic-before-offer) still failing. Preview only. Live untouched. Chat gated
+off live. No cut/COUNT regression. VAD not PTT.
+
+Proven root cause (RTDB + code)
+-------------------------------
+Room 4DGBF (Dummy vs Dummy2), created 12:26:51 ADT — Josh's retest window:
+
+  seats[0]=Dummy  connected=true  lastSeen≈create
+  seats[1]=Dummy2 connected=false lastSeen fresh then gone
+  voice.ready     = [null, true]   ← seat 0 NEVER kept ready in RTDB
+  voice.offer     = ABSENT
+  voice.answer    = ABSENT
+  voice.ice       = ABSENT
+  voice.talking   = [null, false]  ← only seat 1 wrote talking
+
+So bothReady never became true on the host → maybeNegotiate never ran →
+offer=false forever. UI "ready=true" was local Join state, not peer handshake.
+
+Why seat 0 stranded (two cooperating bugs):
+
+1) Leave wiped the WHOLE voice tree (PRIMARY)
+   dispose(clearSignaling=true) called remove(rooms/{code}/voice).
+   Guest Leave (or any seat Leave) deleted the peer's ready bit.
+   Surviving host only re-asserted ready when readyAnnounced was already
+   true. Early publishSeatVoiceReady from Join did NOT start heartbeat /
+   re-assert → after a wipe, ready=[null,true] stuck (4DGBF / NCM5X shape).
+
+2) Ready heartbeat gated on announceReady (SECONDARY)
+   Session effect start({announceReady:false}) deferred heartbeat until
+   after mic adopt. Remount / wipe during that window left seat 0 with
+   joined UI + no RTDB ready + no offer. talking=false / mic path never
+   completed writing either.
+
+EVQCJ (12:14) had ready=[true,true] with no offer (micAttached race) —
+prior pass addressed that; 4DGBF proves ready durability was still broken.
+
+Hard fix
+--------
+1) voicePtt.ts
+   - clearSeatVoiceSignaling(code, seat): seat-scoped Leave — ready/talking/
+     ice for THIS seat only; host also nulls offer/answer/renegotiate.
+     NEVER remove(voiceRoot) on chat Leave.
+   - clearVoiceSignaling(code) kept for room/match leave only.
+   - stayReady from start() → heartbeat + ready-listener re-assert even
+     before/without a prior announceReady completion.
+   - start() always announceReady (offers still gated on micAttached).
+   - Debug line enriched:
+       readyMe= peerReady= bothReady= micAttached= offer= answer= ice= conn= seat=
+
+2) useSideLiveChat.ts
+   - await publishSeatVoiceReady before setJoined.
+   - While joined: 2s ready pulse independent of PC remounts.
+   - Mic adopt/ensureMic failure → status error + Failed (not infinite
+     CONNECTING with offer=false).
+   - kickNegotiate after successful mic attach.
+
+Unchanged (as required)
+-----------------------
+- VOICE_PTT_ENABLED = false
+- SIDE_LIVE_CHAT_ENABLED + isSideLiveChatEnabled(hostname)
+  ON: --desktop-preview- / localhost / 127.0.0.1
+  OFF: live hosts
+- Cut+COUNT CSS tests still pass (meta z12, mid-zone 18, overflow
+  visible, cut-watching full opacity)
+- Live hosting channel NOT deployed
+
+Files
+-----
+- src/multiplayer/voicePtt.ts
+- src/multiplayer/useSideLiveChat.ts
+- src/multiplayer/__tests__/voicePtt.test.ts
+- DEPLOY_SIDE_CHAT_SEAT0_NO_OFFER.txt (this note)
+
+Tests / build
+-------------
+- npm test — 60 files / 556 tests passed
+- npm run build — passed
+  - dist/assets/index-VGv_O9gD.js (948.52 kB)
+  - dist/assets/index-BH-8jxTM.css (182.44 kB)
+
+Deploy
+------
+- firebase hosting:channel:deploy desktop-preview --expires 30d
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (expires ~2026-10-20 12:33 ADT)
+  serves index-VGv_O9gD.js / index-BH-8jxTM.css
+  (bundle contains readyMe=, micAttached=, clearSeat, bothReady=)
+- Live UNTOUCHED: https://supercrib241-baba2.web.app
+  still index-BG_0NujD.js / index-QmjC4Aj0.css
+
+Exact retest (two devices on preview)
+-------------------------------------
+1. Hard-refresh preview on BOTH devices (Cmd/Ctrl+Shift+R).
+   Network must show index-VGv_O9gD.js (not BqB3_5qt / Ba3tA8EE).
+2. Online match; both Join live chat (allow mic).
+3. Healthy debug line within ~2s, e.g.:
+     readyMe=1 peerReady=1 bothReady=1 micAttached=1 offer=1 answer=1 ice=connected conn=connected seat=0
+   Badge → green Live.
+4. If still red, screenshot the new debug line:
+   - readyMe=0 → host still not publishing (say so)
+   - peerReady=0 → opponent has not Joined on preview
+   - bothReady=1 micAttached=0 → mic path; should flip to Failed in ~8s
+   - offer=1 answer=1 but ice stuck → TURN/NAT (Metered URL optional)
+5. Leave on one device must NOT wipe the other's ready (re-Join should
+   handshake again). Speak (VAD) — peer hears without PTT.
+6. Live site: no Join live chat control (hostname gate).
+
+RTDB proof checklist
+--------------------
+rooms/{CODE}/voice after both Join:
+  ready both true? (not [null,true])
+  offer + answer present?
+  After one Leave: peer's ready/{other} still true (seat-scoped clear).

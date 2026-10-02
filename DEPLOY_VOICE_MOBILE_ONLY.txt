@@ -1,0 +1,93 @@
+Voice mobile-only on live + preview — desktop browsers gated off
+Date: 2026-09-22 ~18:35 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Project: supercrib241-baba2
+
+Ask
+---
+Josh greenlight (2026-09-22): voice heard working on preview (iPhone+iPad).
+Ship to **live** for **mobile only**. Disable voice for desktop browser
+(Chrome/Edge/desktop Safari). Preview desktop also no voice; mobile on
+preview keeps voice for testing. Keep VAD, lobby→table hold,
+RTCPeerConnection resolve, silent-audio VAD fix. Deploy both
+desktop-preview and live. Tests for mobile vs desktop gate.
+
+Gate logic
+----------
+voice = SIDE_LIVE_CHAT_ENABLED
+        && isSideLiveChatHostAllowed(hostname)
+        && isMobileClient()
+
+Host allowed (isSideLiveChatHostAllowed):
+  - localhost / 127.0.0.1 / [::1] / *.localhost
+  - Firebase preview: hostname includes `--desktop-preview-`
+  - Live: supercrib241-baba2.web.app / .firebaseapp.com
+
+Mobile (isMobileClient) — UA + touch + media queries:
+  - iPhone / iPod / Android.*Mobile / other phone UA tokens → true
+  - iPad UA → true
+  - iPadOS desktop-UA quirk: Macintosh + maxTouchPoints > 1 → true
+  - Android tablet (no Mobile token) + touch → true
+  - Generic: (pointer: coarse) && (hover: none) && maxTouchPoints > 0 → true
+  - Desktop Chrome/Edge/Safari (fine pointer, no touch / Mac without
+    maxTouchPoints) → false
+
+Wiring (unchanged call sites; gate is centralized):
+  - App.tsx: sideLiveChatEnabled = isSideLiveChatEnabled() && seated…
+  - useSideLiveChat: available = isSideLiveChatEnabled()
+  - OnlineLobby / Table: only render Connect voice when available
+  - VOICE_PTT_ENABLED stays false (legacy Hold-to-talk hidden)
+
+Files
+-----
+- src/multiplayer/voiceConfig.ts
+    + isMobileClient(), isSideLiveChatHostAllowed()
+    + isSideLiveChatEnabled(host, mobile) now requires mobile
+    + live hosts allowed (were previously blocked)
+- src/multiplayer/__tests__/voiceConfig.test.ts  (mobile vs desktop matrix)
+- src/ui/App.tsx / OnlineLobby.tsx  (comments only)
+- DEPLOY_VOICE_MOBILE_ONLY.txt (this note)
+
+Preserved (untouched)
+---------------------
+- VAD (voiceVad.ts)
+- lobby→table hold (lobbyVoice / useSideLiveChat)
+- resolveRTCPeerConnectionCtor
+- silent-audio VAD fix
+
+Tests / build
+-------------
+- vitest voiceConfig + voicePtt + sideLiveChatUi + voiceVad + lobbyVoice
+  — 105 passed
+- tsc --noEmit + vite build — passed
+  assets: index-CfrN6luX.js / index-ChX0cL2_.css
+
+Deploy
+------
+- firebase hosting:channel:deploy desktop-preview --expires 30d
+- firebase deploy --only hosting  (live)
+
+Deploy result (2026-09-22 18:35 ADT)
+------------------------------------
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  expires ~2026-10-22 18:34 ADT
+  serves index-CfrN6luX.js / index-ChX0cL2_.css
+- Live:    https://supercrib241-baba2.web.app
+  serves index-CfrN6luX.js / index-ChX0cL2_.css
+
+Exact retest
+------------
+Mobile Live (iPhone / iPad / Android):
+  1. Hard-refresh https://supercrib241-baba2.web.app (Network → index-CfrN6luX.js).
+  2. Online lobby → both seated → Connect voice (allow mic).
+  3. Expect: Connect voice UI visible; progresses to green Live; VAD works.
+  4. Start match: voice holds into table.
+
+Desktop browser (Chrome / Edge / desktop Safari) — live OR preview:
+  1. Hard-refresh same URLs (must show index-CfrN6luX.js).
+  2. Online lobby / table: NO Connect voice UI, no WebRTC start.
+  3. Expect: voice controls absent on any hostname.
+
+Mobile Preview (regression):
+  1. Hard-refresh preview URL on phone/tablet.
+  2. Connect voice still works for testing (same gate: mobile && host allowed).

@@ -1,0 +1,81 @@
+Cut + COUNT visibility LIVE — morning testers
+Date: 2026-09-20 ~01:10 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Project: supercrib241-baba2
+
+Ask
+---
+Josh (preview): cut cards not visible again (non-cutter first, then both
+seats); COUNT not visible again. Fix those two and push LIVE for morning
+testers. Side live chat Join-not-connecting: investigate only AFTER cut+count
+LIVE; leave chat preview-gated. Do NOT enable chat on live.
+
+Root cause
+----------
+Side-chat hit-target pass (Join moved into .meta-leading) regressed table
+stacking / clip:
+
+1) `.meta { z-index: 32 }` created a high stacking context over mid-zone
+   (z 8–10). CutFan + COUNT lived inside mid-zone and lost to hand (z 14)
+   and header chrome when space tightened.
+2) Mid-zone used `overflow-x: hidden` + `overflow-y: visible`, which CSS
+   computes to overflow-y: auto — clipping CutFan / COUNT when the taller
+   header (44px Join) squeezed mid-zone under `.table { overflow: hidden }`.
+3) Waiting / watch cut fans used `:disabled { opacity: 0.55 }`, so the
+   non-cutter fan looked washed out / “gone” on phone.
+
+Fix
+---
+1) `.meta` z-index 32 → 12. Join control keeps z-index 32 on
+   `.meta-leading` / `.table-side-live-chat` only.
+2) Cut + pegging (and discard/show) mid-zone z-index → 18 (above hand 14);
+   `overflow: visible` both axes so COUNT / CutFan are not clipped.
+3) `.cut-panel { flex-shrink: 0 }`; pegging mid-play-row overflow visible.
+4) `.cut-for-deal-meta { z-index: 1 }` so deal-cut header never paints over
+   the fan body.
+5) Full opacity for `.cut-watching` disabled cards (starter CutFan +
+   DealCutFan watchMode).
+6) Compact Join button min-height 44→36 (desktop 40) so header steals less
+   mid-zone height. Chat still preview-hostname gated.
+
+Constraints kept
+----------------
+- Competitive + SFX pack unchanged (already live)
+- VOICE_PTT_ENABLED = false
+- Side live chat OFF on live (`isSideLiveChatEnabled` hostname gate;
+  preview `--desktop-preview-` / localhost only)
+- Chat connect not deep-debugged this pass (cut+count priority)
+
+Files
+-----
+- src/ui/styles.css
+- src/ui/CutForDeal.tsx (DealCutFan watchMode / cut-watching class)
+- src/ui/__tests__/cutCountVisibility.css.test.ts (new)
+- src/ui/__tests__/sideLiveChatHitTarget.css.test.ts (updated)
+- DEPLOY_CUT_COUNT_LIVE_AM.txt (this note)
+
+Tests / build
+-------------
+- npm test — 60 files / 549 tests passed
+- npm run build — passed
+  - dist/assets/index-BG_0NujD.js (938.71 kB)
+  - dist/assets/index-QmjC4Aj0.css (182.21 kB)
+
+Deploy
+------
+- firebase deploy --only hosting (LIVE)
+  https://supercrib241-baba2.web.app
+  serves index-BG_0NujD.js / index-QmjC4Aj0.css
+- firebase hosting:channel:deploy desktop-preview --expires 30d
+  https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (expires ~2026-10-20 01:09 ADT)
+  same bundle hashes
+
+How to verify (morning)
+-----------------------
+1. Hard-refresh LIVE on phone + desktop (not preview URL).
+2. Online: cut for deal — non-cutter sees face-down fan (full opacity);
+   both seats see cut visuals / reveals.
+3. Starter cut — dealer sees waiting fan + remote reveal.
+4. Pegging — yellow COUNT + play pile visible above hand, not clipped.
+5. LIVE: no Join live chat. Preview only: Join still next to Quit.

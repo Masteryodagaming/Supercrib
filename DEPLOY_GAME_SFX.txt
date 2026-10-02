@@ -1,0 +1,66 @@
+Game SFX — card shuffle / play + wood peg (layered Web Audio) — 2026-09-19 ~22:22 ADT
+
+Ask
+---
+Josh: Current SFX are plain tones. Wants:
+1. Card sounds when shuffled and when played (card-like, not beep).
+2. Pegging sound — distinct peg / wood peg feel.
+Desktop-preview ONLY. Keep Settings sound mute. Keep go/win. Voice PTT stays off.
+Do not revert concurrent Confirm/Adjust + Show scrollbar + Dummy2 cut work.
+
+Implement
+---------
+- Richer layered Web Audio in `src/audio/gameSfx.ts` (no WAV pack; optional
+  `public/sfx/` unused). Noise bursts + bandpass/highpass + short body tones:
+  - shuffle — rapid card-riffle rustle
+  - deal / card — filtered slap + cardboard thump (deal softer; play brighter)
+  - peg — wood tick (noise transient + resonant thock) replaces old square blip
+  - go / win — kept as soft sine stings
+- Mute when `profile.settings.sound === false`; Autoplay / AudioContext errors
+  swallowed. Unlock on first pointer/key/touch.
+- VOICE_PTT_ENABLED left false.
+
+Triggers
+--------
+| Cue     | When |
+|---------|------|
+| shuffle | Deal animation start (Table); CutForDeal mount + tie resetRound |
+| deal    | Each card fly-in step during deal |
+| card    | Peg sequence grows (card played to peg pile) |
+| peg     | Same peg play — layered with card (wood tick) |
+| go      | GO pause banner appears |
+| win     | game.winner set (once per deal on table) |
+
+Key files
+---------
+- src/audio/gameSfx.ts
+- src/audio/__tests__/gameSfx.test.ts
+- src/ui/Table.tsx (playShuffle + playDeal)
+- src/ui/CutForDeal.tsx (playShuffle)
+- src/ui/App.tsx (playCard + playPeg / go / win + mute sync) — surgical SFX only
+- src/ui/Settings.tsx (live Sound toggle, unchanged)
+- public/sfx/README.txt
+- src/multiplayer/voiceConfig.ts (VOICE_PTT_ENABLED = false, unchanged)
+
+Tests / build
+-------------
+- npm test — 53 files / 488 tests passed (incl. gameSfx mute + synth paths)
+- npm run build — passed (index-Ccn8G9cy.js / index-DIb1bZUY.css)
+
+Deploy (hard constraint)
+------------------------
+- desktop-preview ONLY — live NOT promoted
+  (live still serves index-OzRiGnDC.js; preview has index-Ccn8G9cy.js)
+- Preview URL:
+  https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (channel expires ~2026-10-19 22:22 ADT)
+- Live NOT promoted.
+
+Verify
+------
+1. Hard-refresh desktop-preview.
+2. Vs AI: hear shuffle at cut-for-deal, again at deal start, then card slaps as
+   cards fly in (not plain beeps).
+3. Peg a card — card slap + wood peg tick layered; GO / win still play.
+4. Settings → uncheck Sound — mute immediate; re-check restores.
+5. Confirm no Hold/PTT voice UI (VOICE_PTT_ENABLED false).

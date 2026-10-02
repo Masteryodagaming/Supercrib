@@ -1,0 +1,51 @@
+Original hand totals on Competitive card breakdown — 2026-09-19 ~23:15 ADT
+
+Ask
+---
+Competitive show / card breakdown did not show what the dealer (or other
+hands) originally announced. After Adjust + Ref, the kept number overwrote
+the original in the log, so players could not see what was first said.
+Preview only. Do not promote live. No voice/chat. Left gameSfx / cut-SFX alone.
+
+Fix
+---
+1. Persist claimedOriginal (+ adjustedClaimed when Adjust) on claim log entries
+   and pendingMuggins through Approve / Adjust→Ref / Muggins finalize.
+2. ShowOverlay HandBlock: competitive hand announce line on the card block
+   - pendingReview: "Hand N"
+   - pendingMuggins after Adjust: original · adjusted · kept · true
+   - Full summary: each of pone / dealer / crib shows announce from log
+3. Claim log + ref banner still show original hand (house copy: "hand" not
+   "claim"). Ref banner: original / adjusted / kept.
+4. Serialize round-trips claimedOriginal / adjustedClaimed on log + muggins.
+
+How to test on preview
+----------------------
+1. Hard-refresh desktop-preview.
+2. Competitive vs Dummy2: announce a wrong dealer (or pone) total → Adjust →
+   Ref. Card block / log should still show original hand N, plus adjusted /
+   kept / true.
+3. Full show summary: dealer HandBlock shows original announce even when kept
+   differed.
+4. Approve path: Hand N equals kept (no adjusted line).
+5. Online Competitive: same; originals survive RTDB serialize.
+
+Deploy (hard constraint)
+------------------------
+- npm test — 55 files / 518 tests passed
+- npm run build — passed (index-BdIoW79f.css / index-DXBQHLSU.js)
+- firebase hosting:channel:deploy desktop-preview ONLY (not live)
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (channel expires ~2026-10-19 23:14 ADT)
+- Live untouched (not promoted)
+- gameSfx.ts / public/sfx not modified this pass
+- VOICE_PTT_ENABLED left false
+
+Key files
+---------
+- src/engine/supercrib.ts (claimedOriginal on log / muggins / apply path)
+- src/ui/ShowOverlay.tsx (HandBlock handAnnounce + log/ref copy)
+- src/ui/styles.css (.show-hand-announce)
+- src/multiplayer/serialize.ts (+ serialize test)
+- src/engine/__tests__/competitiveScoring.test.ts
+- DEPLOY_ORIGINAL_HAND_SHOW.txt (this note)

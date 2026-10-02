@@ -1,0 +1,29 @@
+Supercrib pegging UI: clear COUNT box + starter/cut from overlapping the player hand.
+
+CSS (src/ui/styles.css) — .table.phase-pegging:
+
+Base:
+- .table-mid-zone: padding-bottom 0.2rem → 0.9rem; gap 0.12rem → 0.2rem
+  (lifts COUNT/play-pile fully above hand via flex space-between)
+- .mid-play-row: margin-bottom 0.1rem; gap 0.2rem
+- .hand-area: transform translateY(-2px) → none; padding-top 0.2rem → 0.55rem
+- .fixed-starter-corner.corner-bottom: bottom 5.8rem → 7.8rem
+- .fixed-crib-corner.corner-bottom: bottom 5.8rem → 7.8rem (YOUR CRIB stays clear/symmetric)
+
+Phone @media (max-width: 520px), (max-height: 780px):
+- .table-mid-zone padding-bottom → 1.05rem
+- starter/crib corner-bottom → 8.4rem
+- starter scale(0.88) in left mid gutter
+- hand-area padding-top → 0.7rem; transform none
+- play-pile cards shrunk (32×44, min-height 42px)
+
+Verified emoji rails unchanged:
+- .reaction-dock top: 38% (base)
+- @900: 38%
+- @1100: 40%
+
+Not touched: pegboard math, Dumpster disable, board paint, ZF board.
+
+Build: npm run build (passed).
+Firebase deploy: not run.
+Artifact: /workspace/supercrib-dist.tar.gz (flat archive of dist/).

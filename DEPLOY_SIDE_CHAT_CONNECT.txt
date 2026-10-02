@@ -1,0 +1,108 @@
+Side live chat peer connect fix — desktop-preview ONLY
+Date: 2026-09-20 ~07:38 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Project: supercrib241-baba2
+
+Ask
+---
+Josh: both players pressed Join live chat and they aren’t connecting.
+Fix peer connect/audio path for side live chat (VAD). Preview only.
+Keep SIDE_LIVE_CHAT off on live. VOICE_PTT_ENABLED stays false.
+Do not regress cut+COUNT live visuals (meta z12, mid-zone 18, overflow
+visible, cut-watching full opacity).
+
+Root cause
+----------
+Several layered bugs in the Join → WebRTC path (not the VAD RMS math):
+
+1) Ready-before-mic race
+   Session wrote voice/ready/{seat} at start(), then adopted the Join mic.
+   Host could createOffer on an empty audio transceiver; replaceTrack
+   renegotiate was dropped when makingOffer was already true (early return
+   without needsRenegotiate). Peer link often never reached live.
+
+2) Join-gesture mic killed on effect teardown
+   Any effect remount / bothConnected blip called dispose() which
+   track.stop()'d the Safari-gesture mic. Re-ensureMic without a tap fails
+   on iOS → stuck red forever while UI still showed joined.
+
+3) Leave / clearSignaling wiped peer ready with no re-assert
+   One seat’s clear of rooms/{code}/voice removed the other seat’s
+   ready/{n}. Surviving session never re-wrote ready → handshake stuck
+   on “Waiting for opponent…”.
+
+4) Dead OpenRelay static TURN creds
+   openrelayproject/openrelayproject is no longer the documented free
+   path (Metered now requires API-key ICE fetch). Cellular / symmetric
+   NAT had no working relay.
+
+5) VAD path had no Hold-style ICE watchdog
+   Legacy PTT kicked ICE restart on Hold; side chat only unmuted on
+   speech and never auto-restarted a stalled link while quiet.
+
+Fix
+---
+1) voicePtt.ts
+   - start({ announceReady: false }) + announceReady() so side chat
+     attaches mic BEFORE publishing ready (first offer has a real track).
+   - start() clears stale ready/{seat} before binding.
+   - Ready listener re-asserts ready/{seat} if wiped while session still
+     wants chat.
+   - maybeNegotiate: if makingOffer, set needsRenegotiate (don’t drop).
+   - scheduleLinkWatchdog (~3.5s after both-ready) → host iceRestart once.
+   - dispose(clear, { stopMic }) can preserve Join mic across remounts.
+   - ICE: freeTURN (free:free) primary relay + freeturn STUN/TURNS;
+     keep Google/Cloudflare STUN.
+
+2) useSideLiveChat.ts
+   - start(defer ready) → adoptMicStream → announceReady → VAD.
+   - Effect cleanup preserves mic (stopMic: false) while still joined.
+   - Full RTDB wipe + mic stop only via shouldFullyTeardownSideChat
+     (left chat / unavailable / no code) — not transient enabled blips.
+
+3) App.tsx
+   - Pass stable session.code / session.seat (don’t null when gate
+     flickers) so Join mic/signaling aren’t wiped mid-match.
+
+Unchanged (as required)
+-----------------------
+- VOICE_PTT_ENABLED = false (table Hold-to-talk stays off)
+- SIDE_LIVE_CHAT_ENABLED = true + isSideLiveChatEnabled(hostname)
+  ON: --desktop-preview- / localhost / 127.0.0.1
+  OFF: live hosts (supercrib241-baba2.web.app / .firebaseapp.com)
+- Cut+COUNT CSS: meta z-index 12, mid-zone 18, overflow visible,
+  cut-watching full opacity (css tests still pass)
+
+Files
+-----
+- src/multiplayer/voicePtt.ts
+- src/multiplayer/useSideLiveChat.ts
+- src/ui/App.tsx
+- src/multiplayer/__tests__/voicePtt.test.ts
+- src/multiplayer/__tests__/sideLiveChatUi.test.ts
+- DEPLOY_SIDE_CHAT_CONNECT.txt (this note)
+
+Tests / build
+-------------
+- npm test — 60 files / 551 tests passed
+- npm run build — passed
+  - dist/assets/index-CS5fFlhj.js (940.60 kB)
+  - dist/assets/index-QmjC4Aj0.css (182.21 kB)
+
+Deploy
+------
+- firebase hosting:channel:deploy desktop-preview --expires 30d
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (expires ~2026-10-20 07:37 ADT)
+  serves index-CS5fFlhj.js / index-QmjC4Aj0.css
+- Live UNTOUCHED: https://supercrib241-baba2.web.app
+  still index-BG_0NujD.js / index-QmjC4Aj0.css
+  (no freeturn in live bundle; chat still hostname-gated off)
+
+How to verify (two devices on preview)
+--------------------------------------
+1. Hard-refresh desktop-preview on BOTH devices.
+2. Online match; each taps Join live chat (allow mic).
+3. Status → Live + green when WebRTC linked; red while linking / failed.
+4. Speak freely (VAD) — peer should hear without PTT; Leave → Join again.
+5. Live site: no Join live chat control (hostname gate).

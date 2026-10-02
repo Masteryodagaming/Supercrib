@@ -1,0 +1,9 @@
+{
+  "id": "ace_spade",
+  "label": "Spade Wizard",
+  "durationMs": 2100,
+  "frames": ["f1.png", "f2.png", "f3.png", "f4.png"],
+  "frameDurationsMs": [225, 275, 350, 1250],
+  "size": 512,
+  "note": "Art update 2026-09-17: flood-cut white → center ~4% pad → 512 LANCZOS (same load as mad_finger/trash_toss/mad_father). Frames: hands, smoke+V, ace reveal, laugh hold."
+}

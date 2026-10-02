@@ -1,0 +1,51 @@
+All felts × Menus — stationary skin lock (generic)
+Date: 2026-09-17 ~14:50 ADT (America/Halifax)
+Tree: /workspace/supercrib (live)
+NO firebase deploy from executor.
+
+WHAT
+User: “Save these setting for all skins felts.”
+Generalize the Dumpster Settings/menus stationary-felt lock to every felt
+skin (Classic green + all `.app.felt-<id>` image felts). Encode the recipe
+in the felt-skin skill so future felts inherit it.
+
+COVERED
+- Classic green (no felt-* class): background-attachment: fixed on .app /
+  html/body/#root when :not(.app-playing). No hazard rail inset.
+- felt-cj_dumpster: same pin behavior as before — --felt-pin-* =
+  cj-dumpster.jpg?v=7 / 100% auto / #050605 / center. Room inset + opaque
+  sheets now via generic [class*="felt-"] rules (Dumpster look preserved).
+- felt-zero_forge (CSS retained, retired from selectable): --felt-pin-* =
+  zero-forge-siderail.jpg?v=7 / cover / #050505 / center; inherits shared pin.
+- Future image felts: .app.felt-<id> + set --felt-pin-* on paint block;
+  shared .app[class*="felt-"]:not(.app-playing) pin / inset / opaque sheets
+  apply automatically.
+
+FIX
+1. CSS vars on each image felt paint block:
+   --felt-pin-image, --felt-pin-size, --felt-pin-color, --felt-pin-position
+2. Replaced Dumpster-only :not(.app-playing) selectors with generic
+   .app[class*="felt-"]:not(.app-playing) (::before pin, html/body/#root
+   attachment fixed, room inset, opaque sheets, settings width tweaks).
+3. Classic: attachment-fixed only (no Dumpster rail inset).
+4. Play (.app-playing) / board paint / holes unchanged.
+
+SKILL
+- /home/box/agent-data/workflows/supercrib-felt-skin/SKILL.md
+  new section “Menu lock (all felts)”
+
+FILES
+- src/ui/styles.css
+- agent-data workflows/supercrib-felt-skin/SKILL.md
+
+BUILD / TAR
+- npm run build → OK (css index-DwA6LSo7.css)
+- Flat tar: /workspace/supercrib-dist.tar.gz
+- Parent: desktop-preview-first recommended, then MSI hosting deploy
+  (no firebase from box)
+
+CONFIRM Dumpster preserved
+- Image URL still cj-dumpster.jpg?v=7
+- Size still 100% auto; color #050605; position center
+- Menu pin + rail inset + opaque rgba(6,8,5,0.9) sheets still apply
+  (via generic selectors, not Dumpster-only)

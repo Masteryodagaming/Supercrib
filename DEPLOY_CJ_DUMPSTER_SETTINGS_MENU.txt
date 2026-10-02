@@ -1,0 +1,33 @@
+C&J Dumpster × Settings — stationary felt, moved room menu
+Date: 2026-09-17 ~13:56 ADT (America/Halifax)
+Tree: /workspace/supercrib (live)
+NO firebase deploy from executor.
+
+ROOT CAUSE
+Settings (.panel-screen) grows .app taller than the viewport. Dumpster felt
+uses background-size: 100% auto + background-position: center center on that
+tall .app, so the cloth is vertically centered mid-document. On Account (and
+other tabs) the art appears to start halfway down the card — "misaligned" /
+cut — while play (viewport-tall .app) looked fine.
+
+FIX (menu moved; skin paint stationary)
+1. While .settings-screen is open under .felt-cj_dumpster:
+   - Clear the scrolling felt paint on .app (background-image: none).
+   - Pin the same ?v=7 / 100% auto / center cloth via a fixed ::before layer
+     (+ background-attachment: fixed on html/body/#root).
+2. Reposition settings room chrome only:
+   - Side padding clamp(1.35rem, 9vw, 2.15rem) to clear hazard / C&J rails.
+   - Narrower tabs/account card; opaque rgba(6,8,5,0.9) sheets.
+
+UNCHANGED
+- Felt image file and ?v=7 URL / 100% auto sizing on play/home rules
+- ALL .app.board-cj_dumpster plank rules (cj-dumpster.jpg?v=11 center / 100% 100%)
+- Pegboard hole math
+
+FILES
+- src/ui/styles.css only
+
+BUILD / TAR
+- npm run build → OK
+- Flat tar: /workspace/supercrib-dist.tar.gz
+- Parent: desktop-preview-first, then MSI hosting deploy (no firebase from box)

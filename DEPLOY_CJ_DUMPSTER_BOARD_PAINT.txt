@@ -1,0 +1,20 @@
+C&J Dumpster board paint + vs-AI stale matchBoardSkinId fix — 2026-09-16
+
+Root cause:
+  vs-AI snapshotted matchBoardSkinId at cut-for-deal via winnerEquippedMatchSkins.
+  If profile hydrate / settings.board=cj_dumpster arrived later, resolveTableSkins kept
+  maple wood (match override "default") for the whole match — .app.board-cj_dumpster missing.
+
+Fixes:
+  1. App.tsx — local AI useEffect refreshes matchFeltId/matchBoardSkinId from equipped
+     skins when profile settings/ownership hydrate or change (online rooms untouched).
+  2. public/boards/cj-dumpster.jpg — re-crop from Josh 1408² source → face-crop 280:400
+     → 896×1280 LANCZOS (ZF recipe). CSS ?v=8 → ?v=9 (plank + swatch).
+  Pegboard hole math untouched. Dummy/Owner unlock rules unchanged.
+
+Verify (Dummy joshuamilliea@icloud.com):
+  Settings → Owned Boards shows C&J Dumpster equipped; new AI match → plank = neon
+  dumpster art (not light maple SVG); data-board=cj_dumpster / .app.board-cj_dumpster.
+
+Deploy: firebase hosting:deploy + hosting:channel:deploy desktop-preview
+  --project supercrib241-baba2

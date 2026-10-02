@@ -1,0 +1,70 @@
+iPad Safari play layout + Hold mic (PTT) visibility fix
+Date: 2026-09-18 ~15:02 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Tar: /workspace/supercrib-dist.tar.gz (flat tar of dist/)
+
+WHY THE MIC WAS MISSING
+1) Mount gate — App only passed `voicePtt` when `session.connection === 'connected'`.
+   During an active online match, presence can briefly report waiting/disconnected, so
+   the Hold mic never mounted even though play was live.
+2) Clip — `.table-mid-zone { overflow: hidden }` + flex `min-height: 0` clipped
+   `.ptt-wrap` at the bottom of the mid-zone when height was tight (esp. iPad
+   landscape under the @900px “desktop” styles).
+
+WHY THE TABLE LOOKED CRUSHED ON iPAD
+- `@media (min-width: 900px)` treats iPad as desktop: framed shell + large
+  `--board-w: clamp(260px, 30vw, 400px)` on a short landscape viewport.
+- `.board-wood-plank { min-height: 0 }` let WebKit flex-shrink the plank below its
+  `aspect-ratio: 280/400`, so Arena (`background-size: 100% 100%`) looked
+  vertically squashed. Mid-zone overflow then hid scores/PTT.
+
+FIXES
+
+App.tsx
+- Pass `voicePtt` whenever online + not spectating.
+- Add `voiceReady: session.connection === 'connected'`.
+- Voice WebRTC wiring still gated on `bothConnected` in useVoicePtt (unchanged).
+
+Table.tsx
+- Move PushToTalkButton OUT of `.table-mid-zone` → sibling `.table-ptt-slot`
+  between mid-zone and hand (above hand, clear of rails/avatars/ZOOM/scores).
+- Show mic whenever `voicePtt` provided; `disabled` + “Connecting…” when
+  `voiceReady === false`. Still hidden for vs-AI / spectate / gameOver.
+
+PushToTalkButton.tsx
+- `notReadyHint` when disabled (short Connecting… line under the pill).
+
+styles.css
+- Plank: `min-height: calc(var(--board-w) * 400 / 280)` + pegboard `min-height: auto`
+  so flex cannot squash aspect-ratio (hole math / paint untouched).
+- `.table-ptt-slot` flex-none, z-index 22, above hand.
+- Tablet overrides AFTER desktop @900/@1100:
+    @media (min-width: 900px) and (hover: none),
+           (min-width: 900px) and (max-width: 1100px)
+      → phone-like `--board-w: clamp(190px, 24vw, 230px)`, flush side avatars,
+        readable hand, reaction docks aligned, no weird letterboxing shell.
+    @media (min-width: 900px) and (max-height: 820px)
+      → height-aware board clamp for landscape iPad / short windows.
+- Real mouse desktops (hover:hover, tall) keep framed @900/@1100 shell.
+
+UNTOUCHED
+- Pegboard hole math, Arena/Gold/etc board paint recipes
+- Side avatars kept (tablet keeps ~44px flush gutters)
+- Online-only PTT (vs AI still hidden)
+
+BUILD / TEST
+- npm test -- src/multiplayer/__tests__/voicePtt.test.ts  (7 passed)
+- npm run build  OK
+
+DEPLOY
+- Live: https://supercrib241-baba2.web.app
+- desktop-preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (expires 2026-10-18 ~03:03 ADT)
+
+HOW TO VERIFY (iPad Safari)
+1. Hard-refresh live (or desktop-preview) during an online match.
+2. Hold mic pill sits between board/play row and your hand — visible even if
+   status isn’t exactly “connected” (disabled + Connecting… until ready).
+3. Portrait + landscape: plank not squashed, emoji rails aligned with board,
+   scores/hand readable, side avatars flush, no warped letterboxing.
+4. Vs AI: mic still absent.

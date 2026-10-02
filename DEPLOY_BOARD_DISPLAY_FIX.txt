@@ -1,0 +1,21 @@
+Board display fix (vs-AI live equip) — 2026-09-16
+
+Root cause:
+  vs-AI snapshotted matchBoardSkinId at cut-for-deal into local state. resolveTableSkins
+  treats any truthy matchBoardSkinId (including "default") as the table paint. If cut ran
+  before auth/cloud hydrate (or settings.board landed later), the match froze on maple SVG
+  for the whole game while C&J felt (separate path / already hydrated theme) still showed.
+
+Fix (paint-only; Pegboard hole math untouched; online room skins unchanged):
+  1. App.tsx — vs-AI cut no longer writes matchFeltId/matchBoardSkinId.
+  2. App.tsx — local play (!session.code) always passes null match* into resolveTableSkins
+     so boardId = effectiveBoardId(live profile equip / Dummy ZF / owned cj_dumpster).
+  3. Removed prior hydrate-refresh effect (no snapshot to refresh).
+  4. matchSkins tests — stale "default" snapshot vs null-match live equip cases.
+
+Verify (Dummy joshuamilliea@icloud.com, hard-refresh):
+  Settings → Owned Boards → equip C&J Dumpster → Save → Vs AI → after cut, plank =
+  neon dumpster art; .app[data-board=cj_dumpster].board-cj_dumpster (not light maple SVG).
+  Online winner picker / room matchBoardSkinId still overrides for both seats.
+
+Do NOT firebase deploy from this box — parent ships /workspace/supercrib-dist.tar.gz.

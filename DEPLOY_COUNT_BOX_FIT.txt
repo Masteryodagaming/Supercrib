@@ -1,0 +1,71 @@
+COUNT box fit-to-content (no empty gray over hand) — 2026-09-19 ~21:42 ADT
+
+Ask
+---
+Josh (Chrome desktop-preview): translucent gray COUNT/play-area box still
+overlaps the right side of the hand (covers part of 9♦) and steals hits.
+COUNT box should start **small** and **expand as needed** with the play pile —
+not a fixed wide empty rectangle. Keep: pile shows all / wraps; hand clickable;
+crib/starter smaller; board pass-3; Competitive/SFX from parallel agents.
+
+Root cause
+----------
+PLAY_PILE_SHOW_ALL removed the 220px cap but set:
+  .table.phase-pegging .mid-play-row .play-area.peg-active {
+    flex: 1 1 auto; width: 100%; max-width: 100%;
+  }
+That stretched the translucent peg-active chrome across the full mid-row even
+with only 2–3 pile cards — empty gray panel sat over the right hand cards.
+
+Fix (display only — src/ui/styles.css)
+--------------------------------------
+.table.phase-pegging .mid-play-row .play-area.peg-active:
+  flex: 0 1 auto;
+  width: max-content;     /* shrink-wrap to count + pile */
+  max-width: 100%;        /* still expand/wrap across mid-row when many cards */
+  overflow: visible;
+  align-self: center;
+  pointer-events: none;   /* belt-and-suspenders vs hand taps */
+
+.play-pile-row during pegging: still width 100% of that content-sized box,
+flex-wrap wrap, overflow visible — full sequence still visible, grows/wraps.
+
+KEPT (re-read CSS before edit; did not revert parallel work)
+----
+- PLAY_PILE_SHOW_ALL: no 220px cap; pile wrap + overflow visible
+- HAND_HIT_TARGET: hand z-index 14, mid-zone pointer-events none,
+  crib/starter compact vs large hand
+- Pass-3 board clamps; competitive claim overlay; splash ZF contain
+- App.tsx / Home.tsx / SFX / Competitive logic untouched this pass
+
+Files
+-----
+- src/ui/styles.css
+- src/ui/__tests__/countBoxFit.css.test.ts (new)
+- src/ui/__tests__/playPileShowAll.css.test.ts (updated for max-content)
+- DEPLOY_COUNT_BOX_FIT.txt (this note)
+
+Verify
+------
+1. Hard-refresh desktop-preview in side-by-side Chrome.
+2. Vs AI → pegging with 2–3 cards: COUNT box hugs the pile (no empty gray
+   panel over 9♦ / right hand); hand fully tappable.
+3. Play 4+ into the count: box expands / wraps; all pile cards visible.
+4. Crib/starter still compact; board still pass-3; Competitive claim + SFX OK.
+
+Deploy (hard constraint)
+------------------------
+- npm test — 52 files / 483 tests passed
+- npm run build — passed (index-CsyCkRDu.css / index-BSKwZAoV.js)
+- firebase hosting:channel:deploy desktop-preview ONLY (not live)
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+
+Deploy results
+--------------
+- npm test — 52 files / 483 tests passed
+- npm run build — passed (index-CsyCkRDu.css / index-BSKwZAoV.js)
+- desktop-preview channel deployed 2026-09-19 ~21:42 ADT
+- Preview serves index-CsyCkRDu.css / index-BSKwZAoV.js
+- Live untouched (not promoted)
+- Preview URL: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (channel expires ~2026-10-19 21:42 ADT)

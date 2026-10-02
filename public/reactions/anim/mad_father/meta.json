@@ -1,0 +1,25 @@
+{
+  "id": "mad_father",
+  "label": "Mad Father",
+  "durationMs": 2100,
+  "frames": [
+    "f1.png",
+    "f2.png",
+    "f3.png",
+    "f4.png"
+  ],
+  "frameDurationsMs": [
+    225,
+    275,
+    350,
+    1250
+  ],
+  "size": 512,
+  "named": [
+    "00_calm",
+    "01_shock",
+    "02_mad",
+    "03_steam"
+  ],
+  "note": "calm \u2192 shock \u2192 red mad \u2192 steam ears hold; Same load as mad_finger/trash_toss: flood-cut white \u2192 center pad \u2192 512 LANCZOS"
+}

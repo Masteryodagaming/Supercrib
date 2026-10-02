@@ -1,0 +1,42 @@
+Emoji rail 8 + Angry Trash Toss (Owner) deploy (2026-09-16 ADT ~20:19)
+
+Changes:
+1) Reaction dock: 6 → 8 slots (4 left + 4 right)
+   - RAIL_SLOT_COUNT=8
+   - DEFAULT_RAIL: laugh,cry,angry,skunk | facepalm,handshake,clover,go
+   - `go` is free store stub (glyph "GO") so every account can fill 8 unique slots
+   - ReactionBar slice(0,4)+slice(4,8); Settings equip UI uses RAIL_SLOT_COUNT
+   - Dock CSS grid-template-rows: repeat(4, …); buttons keep aspect-ratio 1 + flex-shrink:0
+
+2) Angry Trash Toss unlock (Mad Finger pattern)
+   - Owner (j0shwa / Master Yoda) AND Dummy get trash_toss
+   - OWNER_SHARED_EMOJI_IDS = [mad_finger, trash_toss]
+   - canUseTrashToss === canUseMadFinger
+   - effectiveOwnedEmojiIds / ownedReactEmojiIds / Settings save / hydrateAccountFromCloud
+   - Equippable on the 8-slot rail; not in Store shop
+
+3) Trash Toss anim slowed (~1.4×)
+   - Old: [120, 180, 350, 550] = 1200ms
+   - New: [180, 280, 500, 750] = 1710ms (still 4 frames, same art)
+   - ANIM_V_TRASH=3; meta.json + ReactEmoji fallback + CSS press 1710ms
+
+Untouched: paint-only boards, Pegboard hole math, Felt CSS (cover/siderail).
+
+Box artifacts ready:
+  /workspace/supercrib-dist.tar.gz  (flat tar of dist/)
+  /workspace/supercrib/dist/        (built; index.html at dist root)
+
+MSI path (machineId b8a670af-0b3a-4878-86f4-8b98e0731cbc):
+  1) CopyFromBox /workspace/supercrib-dist.tar.gz
+       -> C:\Users\J0shw\Downloads\supercrib-dist.tar.gz
+  2) Extract into C:\Users\J0shw\Downloads\supercrib\supercrib\dist
+       (replace contents; flat archive — extract so index.html lands in dist/)
+  3) cd C:\Users\J0shw\Downloads\supercrib\supercrib
+     npx.cmd firebase deploy --only hosting
+     npx.cmd firebase hosting:channel:deploy desktop-preview
+
+Expected:
+  https://supercrib241-baba2.web.app
+  + desktop-preview channel URL from firebase output
+
+NOTE: This subagent does NOT firebase deploy. Parent must CopyFromBox + MSI deploy.

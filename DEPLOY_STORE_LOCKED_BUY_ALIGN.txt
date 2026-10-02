@@ -1,0 +1,33 @@
+Store locked shelves — lined-up cards + disabled Buy
+Date: 2026-09-17 ~16:33 ADT (America/Halifax)
+Tree: /workspace/supercrib (live)
+NO firebase deploy from executor — preview-first.
+Tar: /workspace/supercrib-dist.tar.gz
+
+WHAT
+User: “Line up the avatars and add a buy button but keep them all locked
+and copy it for rest of buyables.” (Avatars, not emoji.)
+AVATARS shelf was overlapping the title because `.store-teaser-art-wrap`
+used `position:absolute; top:-3.15rem` under a giant Coming soon veil.
+
+FIX
+1. src/ui/Store.tsx
+   - LockedBuyButton helper: disabled + aria-disabled + title “Coming soon”.
+   - AVATARS / EMOJI / SUPERCOIN (Buy Coin): same card pattern as Board —
+     art + name + price/blurb + disabled Buy; per-card 🔒 lock chip.
+   - Removed giant `.store-teaser-veil` from locked shelves.
+   - BOARD / FELT Buy unchanged (still purchasable).
+
+2. src/ui/styles.css
+   - `.store-teaser-art-wrap` → relative flow layout (no absolute overhang).
+   - Drop name `margin-top: 2.55rem` compensation; normal shelf padding.
+   - 2-col grid (`repeat(2, minmax(0, 1fr))`) for lined-up mobile cards.
+   - Soft lock dim instead of giant veil; `.store-card-lock-chip` per card.
+   - `.store-teaser-art-wrap-board` stays relative rounded square (shared card).
+   - Disabled Buy opacity for locked buttons.
+
+SUCCESS
+- Avatars lined up in 2-col grid with disabled Buy + lock chip; no header overlap.
+- Emoji + SuperCoin (Buy Coin) match locked card pattern.
+- Board / Felt still buyable; shared flow card CSS.
+- Build OK; tar ready for preview. No firebase.

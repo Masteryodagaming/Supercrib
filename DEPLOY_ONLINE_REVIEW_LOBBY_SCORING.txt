@@ -1,0 +1,67 @@
+Online Approve/Adjust fix + lobby scoring (Competitive) — 2026-09-19 ~22:40 ADT
+
+Asks
+----
+1. Online Competitive: reviewing seat never saw Approve hand / Adjust hand
+   (phone + PC; both seats broken when it was their turn to review).
+2. Lobby: pick Normal / Competitive AFTER join (host writable, guest live).
+Preview only. Do NOT promote live. Voice/side live chat NOT in this build.
+
+Root cause (Approve/Adjust)
+---------------------------
+Show overlay uses overflow:hidden (no scrollbar). Claim keypad got sticky /
+:has(.claim-pad) treatment so Confirm stayed on-screen, but Approve/Adjust
+(.review-actions) sat BELOW the claim log and were clipped on both devices.
+Seat gating (reviewSeat === viewer) was already correct for online; Dummy2
+hotseat path unchanged.
+
+Fix
+---
+1) ShowOverlay: move Approve/Adjust (+ Muggins) above the claim log; clearer
+   online respondent check; claimant sees "Opponent reviewing hand…" only.
+2) CSS: sticky .review-actions / .muggins-actions + :has() flex like claim-pad.
+3) App viewer: prefer session.seat when in a room (don't collapse guest→0).
+4) serialize pendingReview round-trip test (scorer 0 and 1).
+
+Lobby scoring after join
+------------------------
+- Guest join no longer auto-starts cut; room stays waiting until host Play.
+- Host sees Normal / Competitive chooser in waiting lobby; writes
+  setRoomScoringMode → RTDB; guest badge updates live.
+- Locked once status is cutting / playing / ended or game dealt.
+- Create-time Home scoring pick still seeds the room default.
+
+Voice (explicitly out of scope)
+-------------------------------
+- VOICE_PTT_ENABLED remains false.
+- Side live chat / VAD is a SEPARATE preview track — not bundled here so
+  Competitive can promote later without voice.
+
+How to test on preview
+----------------------
+1. Hard-refresh desktop-preview on phone + computer.
+2. Online Competitive: claim a hand → opponent MUST see Approve hand /
+   Adjust hand (not clipped). Claimant sees wait copy only.
+3. Swap roles: other seat claims → first seat gets Approve/Adjust.
+4. Lobby: Create room → guest joins → both still in waiting → host toggles
+   Normal ↔ Competitive (guest sees update) → host Play → mode locked.
+5. Dummy2 AI Approve/Adjust still works; claim→hand copy kept.
+6. Voice Hold button still absent.
+
+Deploy (hard constraint)
+------------------------
+- npm test — 54 files / 497 tests passed
+- npm run build — passed (index-BVHZuAGF.css / index-BLqhMXMq.js)
+- firebase hosting:channel:deploy desktop-preview ONLY (not live)
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (channel expires ~2026-10-19 22:34 ADT)
+- Live NOT promoted
+- VOICE_PTT_ENABLED = false; side live chat/VAD not implemented this pass
+
+Key files
+---------
+- src/ui/ShowOverlay.tsx, styles.css, App.tsx, OnlineLobby.tsx
+- src/multiplayer/roomSession.ts (setRoomScoringMode, join stays waiting)
+- src/multiplayer/useRoomSession.ts
+- src/multiplayer/voiceConfig.ts (still false; note only)
+- tests: serialize, roomScoringMode, desktopCountWindow.css

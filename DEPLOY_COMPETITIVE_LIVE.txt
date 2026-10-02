@@ -1,0 +1,71 @@
+Competitive + SFX pack → LIVE — 2026-09-19 ~23:46 ADT
+
+Ask
+---
+Josh: "push the competitive live." Promote the current Competitive + SFX
+desktop-preview pack to production Firebase Hosting (default / live channel).
+Keep side live voice chat / PTT / VAD OFF — VOICE_PTT_ENABLED must stay false;
+do not ship chat UI live.
+
+What shipped (now LIVE)
+-----------------------
+Competitive scoring pack:
+- Normal / Competitive scoring mode (lobby mode selectable after both join)
+- Approve / Adjust flow; Adjust keypad blank; original claim in breakdown
+- Ref modal + clear when hand advances (stale Ref fix)
+- Overclaim steal ×2; COUNT / UI layout fixes tied to this pack
+- Online cut visibility; Approve/Adjust visibility fixes
+
+Card / peg SFX pack:
+- Real WAVs under /sfx (card_play, card_cut, peg_wood, etc.)
+- Card select tap (crib discard); card play slap (not coin)
+- Cut SFX; peg prize scale; desktop unlock
+- Crib select SFX (latest preview)
+
+Intentionally NOT live / stayed false
+-------------------------------------
+- VOICE_PTT_ENABLED = false (src/multiplayer/voiceConfig.ts)
+- Side live voice chat / PTT / VAD UI not shipped
+- PushToTalkButton gated; production bundle has no "Hold to talk" string
+  (dead-code eliminated from index-BYnzlayH.js)
+- No re-enabled hidden PTT controls
+
+Verify
+------
+1. Live serves index-BYnzlayH.js + index-Ds6xxoUC.css
+2. Live WAV: https://supercrib241-baba2.web.app/sfx/card_play1.wav → 200
+3. Live JS: zero matches for "Hold to talk" / PushToTalk
+4. Source flag: VOICE_PTT_ENABLED = false
+
+Tests / build
+-------------
+- npm test — 55 files / 526 tests passed
+- npm run build — passed
+  - dist/assets/index-Ds6xxoUC.css (178.61 kB)
+  - dist/assets/index-BYnzlayH.js (917.81 kB)
+- Bundle hashes match latest desktop-preview (clear stale Ref + crib select SFX)
+
+Deploy
+------
+- firebase deploy --only hosting → LIVE
+  https://supercrib241-baba2.web.app
+- Also refreshed desktop-preview (same dist, in sync)
+  https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (channel expires ~2026-10-19 23:45 ADT)
+- Project: supercrib241-baba2
+
+Live vs preview-only
+--------------------
+- Live and desktop-preview now serve the SAME competitive+SFX pack
+  (index-BYnzlayH.js / index-Ds6xxoUC.css). Nothing competitive/SFX left
+  preview-only after this promote.
+- Voice/PTT/chat remains code-present but flag-off on both channels
+  (preview-only track for a future side-chat promote — not enabled here).
+
+Key files
+---------
+- src/multiplayer/voiceConfig.ts (VOICE_PTT_ENABLED = false)
+- src/engine/supercrib.ts (competitive scoring)
+- src/ui/ShowOverlay.tsx, App.tsx, Table.tsx
+- src/audio/gameSfx.ts + public/sfx/*.wav
+- DEPLOY_COMPETITIVE_LIVE.txt (this note)

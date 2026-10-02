@@ -1,0 +1,103 @@
+Side live chat — guest answer wipe race + mic gate — desktop-preview ONLY
+Date: 2026-09-20 ~12:57 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Project: supercrib241-baba2
+
+Ask
+---
+Josh retest FAILED again after trickle SDP fix (index-DtZIuNwj.js), iPhone
+Safari seat=0 @ 12:51 ADT:
+  readyMe=1 peerReady=1 bothReady=1 micAttached=1
+  offer=1 answer=0 seenOffer=1 wroteAnswer=0
+  ice=new conn=new seat=0
+Badge FAILED. Preview only. Live untouched. Chat gated. Keep cut/COUNT/forgot-password.
+
+RTDB evidence (room MT22J, seats lastSeen ~12:51 ADT)
+-----------------------------------------------------
+  seats[0]=Dummy2 connected  seats[1]=Dummy connected
+  voice.ready  = [true, true]
+  voice.offer  = PRESENT (from=0, at 12:51:16 ADT, sdpLen=1188, sendrecv)
+  voice.answer = ABSENT
+  voice.ice    = ONLY seat 0 (host + srflx); ice/1 ABSENT
+  renegotiate  = ABSENT
+Unauthenticated PUT to voice/answer SUCCEEDED (rules open) — NOT a rules block.
+
+Proven root cause
+-----------------
+1) Host maybeNegotiate always did update({ offer, answer: null }) on every
+   successful createOffer. Offer-retry / renegotiate paths could wipe a guest
+   answer mid-write → answer stays 0 forever (Josh hypothesis confirmed in code).
+2) Guest onRemoteOffer early-returned when !micAttached — and answer-retry also
+   required micAttached. Ready can publish before mic; Join mic lag ⇒ never
+   createAnswer ⇒ no ice/1 and no answer (matches RTDB).
+3) Mid-flight race: newer offer arrived while makingAnswer=true; on finish the
+   first answer path set pendingRemoteOffer=null and wroteLocalAnswer=true,
+   dropping the newer offer with no retry.
+4) While have-local-offer, retry previously no-op'd (not stable) OR if it did
+   re-offer, cleared answer. Now: republish SAME local offer (new `at`) without
+   clearing answer so late guest listeners still fire.
+
+Hard fix
+--------
+1) shouldClearAnswerOnOfferPublish — only clear answer on iceRestart OR
+   (distinct new offer SDP AND hadRemoteAnswer). Never on plain retry.
+2) have-local-offer retry: republish existing localDescription offer only;
+   never answer:null.
+3) Guest answers without mic (recvonly); mic attach still bumps renegotiate.
+4) pendingRemoteOffer preserved across mid-flight newer offers; immediate
+   re-entry after makingAnswer clears.
+5) Guest surfaces Answer write failed: … if RTDB set throws.
+6) Debug: rtdbAnswer=0/1 (host from answer listener presence).
+
+Unchanged
+---------
+- VOICE_PTT_ENABLED = false
+- SIDE_LIVE_CHAT hostname gate (preview/localhost only; live OFF)
+- Forgot password / cut / COUNT tests green
+- Live hosting NOT deployed
+
+Files
+-----
+- src/multiplayer/voicePtt.ts
+- src/multiplayer/__tests__/voicePtt.test.ts
+- DEPLOY_SIDE_CHAT_GUEST_NO_WRITE.txt (this note)
+
+Tests / build
+-------------
+- npm test — 61 files / 566 tests passed
+- npm run build — passed
+  - dist/assets/index-ChIFB4lw.js (952.45 kB)
+  - dist/assets/index-a-wGPlVg.css (182.98 kB)
+
+Deploy
+------
+- firebase hosting:channel:deploy desktop-preview --expires 30d
+
+Deploy result (2026-09-20 12:57 ADT)
+------------------------------------
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  expires ~2026-10-20 12:57 ADT
+  serves index-ChIFB4lw.js / index-a-wGPlVg.css
+  (bundle contains rtdbAnswer=, Answer write failed)
+- Live UNTOUCHED: https://supercrib241-baba2.web.app
+  still index-BG_0NujD.js / index-QmjC4Aj0.css
+
+Exact retest (two devices on preview)
+-------------------------------------
+1. Hard-refresh BOTH (Network must show index-ChIFB4lw.js).
+2. Online match; both Join live chat (allow mic).
+3. Healthy debug within ~2–4s on BOTH seats, e.g.:
+   Host seat=0:
+     readyMe=1 peerReady=1 bothReady=1 micAttached=1
+     offer=1 answer=1 seenOffer=1 wroteAnswer=1 rtdbAnswer=1
+     ice=connected conn=connected seat=0
+   Guest seat=1:
+     readyMe=1 peerReady=1 bothReady=1 micAttached=1
+     offer=1 answer=1 seenOffer=1 wroteAnswer=1 rtdbAnswer=1
+     ice=connected conn=connected seat=1
+   Badge → green Live.
+4. If still red, screenshot BOTH debug lines:
+   - Host rtdbAnswer=0 → guest still not writing (or wipe still happening)
+   - Guest wroteAnswer=0 + "Answer failed/write failed" → createAnswer/RTDB error
+   - answer=1 ice stuck → TURN/NAT
+5. Live site: no Join live chat control.

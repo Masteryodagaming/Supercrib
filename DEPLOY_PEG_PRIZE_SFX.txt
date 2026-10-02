@@ -1,0 +1,68 @@
+Peg prize SFX (2/4/6/12 jackpot) + desktop silence unlock fix — 2026-09-19 ~22:52 ADT
+
+Ask
+---
+Josh: Prize/reward cue on peg score events; grandeur scales with points.
+Named steps: 2 low / 4 bigger / 6 big / 12 jackpot. Nearby scores map between.
+Also: desktop Chrome silence again — fix AudioContext unlock race.
+Preview ONLY. VOICE_PTT stays false. Stay in audio/SFX + peg call sites.
+
+Silence fix (what broke)
+------------------------
+bindUnlockOnce removed pointer/key/touch listeners after the FIRST gesture even
+when resume() had not finished / ctx still suspended. Mount-time
+unlockGameAudio() in useEffect([]) has no gesture on Chrome — useless alone.
+play* could schedule WAV/synth while ctx.state === 'suspended' → silent.
+
+Fix
+---
+- Keep gesture listeners (pointerdown/up, click, keydown, touchstart/end) until
+  ctx.state === 'running'; re-bind if ctx later suspends.
+- withRunningCtx: resume().then(play) so shuffle/deal/card/peg/go/win wait for
+  running before starting buffers/oscillators.
+- Settings sound still gated (default on); mute immediate via setSoundEnabled.
+
+Peg prize tiers
+---------------
+playPeg(points) — wood WAV tick always; if points > 0 layer synth prize:
+  grandeur continuum with clear steps:
+    1 → quieter than low
+    2 → low (small chime)
+    3 → between 2–4
+    4 → mid (fuller)
+    5 → near 4–6
+    6 → big
+    7–11 → ramp toward jackpot
+    12+ → jackpot flourish
+App.tsx peg sequence growth: playPeg(game.lastPegFlash?.points ?? 0).
+
+Files
+-----
+- src/audio/gameSfx.ts
+- src/audio/__tests__/gameSfx.test.ts
+- src/ui/App.tsx (playPeg points only)
+- DEPLOY_PEG_PRIZE_SFX.txt
+- src/multiplayer/voiceConfig.ts (VOICE_PTT_ENABLED = false, unchanged)
+
+Deploy (hard constraint)
+------------------------
+- desktop-preview ONLY — live NOT promoted
+- npm test / npm run build before deploy
+
+Verify
+------
+1. Hard-refresh desktop-preview on Chrome.
+2. Click once anywhere → then cut/deal: hear shuffle + deal slaps (silence fixed).
+3. Peg a 2 (pair/15): wood + small prize; peg a 4: fuller; 6: big; 12 (quads): jackpot.
+4. Non-scoring peg: wood tick only (no prize).
+5. Settings → Sound off mutes; on restores. No Hold/PTT UI.
+
+Deploy results
+--------------
+- npm test — 55 files / 511 tests passed
+- npm run build — passed (index-BVHZuAGF.css / index-ByLDah7X.js)
+- desktop-preview channel deployed 2026-09-19 ~22:52 ADT
+- Preview serves index-ByLDah7X.js
+- Live untouched (not promoted)
+- Preview URL: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (channel expires ~2026-10-19 22:51 ADT)

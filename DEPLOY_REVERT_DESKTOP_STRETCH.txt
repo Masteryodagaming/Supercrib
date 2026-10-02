@@ -1,0 +1,36 @@
+Desktop layout stretch REVERT (no firebase deploy) — 2026-09-16 ~22:50 ADT
+
+WHY:
+  Josh: current Supercrib desktop looks horrible — oversized plank + stretched ZF felt
+  butchered the in-match layout. Restore pre-stretch widths that looked good with Dumpster.
+
+REVERTED (src/ui/styles.css desktop ~7732+):
+  1) --board-w
+     @900:  clamp(260px, 30vw, 400px)   (was min(440px, 78%, calc((100dvh - 26rem) * 0.7)))
+     @1100: clamp(300px, 28vw, 460px)   (was min(480px, 82%, calc(...)))
+     .table .board-wood-plank width/min/max and .pegboard/.board-side-scores still tied to var.
+
+  2) ZF FELT only (not ZF board paint):
+     html/body/#root:has(.app.felt-zero_forge) and .app.felt-zero_forge(.app-playing)
+     desktop + base viewport: background-size cover + center center (was 100% 100% gutter-fill stretch).
+     Siderail URL kept: /felts/zero-forge-siderail.jpg?v=7
+
+  3) Framed phone shell KEPT (NOT full-bleed):
+     @900:  .app.app-playing { max-width: min(720px, 94vw); }
+     @1100: .app.app-playing { max-width: min(820px, 90vw); }
+
+  4) Comment block: no longer claims “height-safe fill toward black edges”.
+
+UNTOUCHED (KEEP):
+  - Dumpster board paint (ellipse radial, cj-dumpster.jpg?v=9, hole-dot/trap/finish)
+  - App.tsx board display path (localPlay null match skins)
+  - C&J felt art ?v=4 + felts.ts
+  - Emoji 8-slot / trash toss
+  - Pegboard hole math
+  - Default maple board CSS
+  - Zero Forge BOARD paint (board-zero_forge plank jpg / 100% 100% fill)
+
+BUILD / ARTIFACT:
+  npm run build
+  tar -C dist -czf /workspace/supercrib-dist.tar.gz .
+  Do NOT firebase deploy from this revert.

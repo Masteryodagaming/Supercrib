@@ -1,0 +1,67 @@
+Side live chat hit-target + header placement — desktop-preview ONLY
+Date: 2026-09-20 ~00:02 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Project: supercrib241-baba2
+
+Ask
+---
+Josh (iPhone Safari preview): "Join live chat" visible lower-left overlapping
+hand cards (3♥…) but NOT tappable — hand/card layer stole pointer events.
+Follow-up: needs a BETTER spot clear of hand / crib prompts / Confirm discard
+(prefer side rail / near Quit / header); also NOT visible on WEB/desktop
+browser play view — must show on wide desktop too. Preview only. Keep VAD,
+green/red Live, Leave, SIDE_LIVE_CHAT_ENABLED host gate. Live hosting
+untouched.
+
+Root cause
+----------
+1) `.table-side-live-chat` was `position: absolute; bottom: 5.8–6.4rem; left`
+   over the hand fan. Hand-area (z14 + transform) intercepted taps even when
+   the pill painted on top.
+2) Same bottom-left zone sits under starter / hand chrome on wide desktop, so
+   the control often looked missing on web.
+
+Fix
+---
+1) Mount **Join live chat** in `.meta-leading` next to **Quit** (header left).
+   Clear of hand, Confirm discard, crib prompts, starter corner.
+2) CSS: `position: relative` (no absolute bottom-over-hand); `z-index: 32` on
+   `.meta` / `.meta-leading` / `.table-side-live-chat`; `pointer-events: auto`;
+   `.meta { overflow: visible }`; Join button `min-height: 44px` +
+   `touch-action: manipulation`.
+3) Desktop @900+: same header placement, slightly roomier label — visible on
+   wide/desktop play view.
+4) Unchanged: VAD (not PTT); Live green connected / red not; Leave;
+   `SIDE_LIVE_CHAT_ENABLED` + `isSideLiveChatEnabled(hostname)` preview gate;
+   legacy table Hold-to-talk stays OFF.
+
+Files
+-----
+- src/ui/Table.tsx              — mount in meta-leading near Quit
+- src/ui/styles.css             — header placement + 44px hit target
+- src/ui/__tests__/sideLiveChatHitTarget.css.test.ts (new)
+- DEPLOY_SIDE_CHAT_HIT_TARGET.txt (this note)
+
+Tests / build
+-------------
+- npm test — 59 files / 544 tests passed
+- npm run build — passed
+  - dist/assets/index-DIV9yp7e.js (938.62 kB)
+  - dist/assets/index-BebYOo5E.css (181.81 kB)
+
+Deploy
+------
+- firebase hosting:channel:deploy desktop-preview --expires 30d
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (expires ~2026-10-20 00:02 ADT)
+  serves index-DIV9yp7e.js / index-BebYOo5E.css
+- Live UNTOUCHED: https://supercrib241-baba2.web.app
+  (still index-BYnzlayH.js / index-Ds6xxoUC.css; no Join live chat / no meta-leading)
+
+How to verify
+-------------
+1. Hard-refresh desktop-preview on iPhone Safari + desktop Chrome.
+2. Online match: **Join live chat** sits next to Quit (header), not on hand.
+3. Tap Join — mic prompt; Live green when linked / red when not; Leave works.
+4. Confirm discard + hand cards fully tappable; no overlap with chat control.
+5. Live site still has no Join live chat.

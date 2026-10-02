@@ -1,0 +1,26 @@
+Mad Finger board-pop anim fix deploy (2026-09-16 AT ~06:22)
+
+Root cause: ReactionBar pops used a static <img> (never advanced frames).
+Fix: EmoteFrameClip plays animMeta frames on pop mount; mad_finger uses
+hold 150 → peak 400 → settle 300 → hold 150 (f1→f2→f3→f1; f0===f1 dropped).
+Rail ReactEmoji playClip shares the same uneven timing + preload.
+
+Box artifacts ready:
+  /workspace/supercrib-dist.tar.gz  (flat tar of dist/)
+  /workspace/supercrib/dist/        (built; index.html at dist root)
+
+MSI path (machineId b8a670af-0b3a-4878-86f4-8b98e0731cbc):
+  1) CopyFromBox /workspace/supercrib-dist.tar.gz
+       -> C:\Users\J0shw\Downloads\supercrib-dist.tar.gz
+  2) Extract into C:\Users\J0shw\Downloads\supercrib\supercrib\dist
+       (replace contents; flat archive — extract so index.html lands in dist/)
+  3) cd C:\Users\J0shw\Downloads\supercrib\supercrib
+     npx.cmd firebase deploy --only hosting
+     npx.cmd firebase hosting:channel:deploy desktop-preview
+
+Expected:
+  https://supercrib241-baba2.web.app
+  + desktop-preview channel URL from firebase output
+
+NOTE: This subagent has no cursor MCP (CopyFromBox/ListMachines).
+Parent must run CopyFromBox + MSI firebase deploy.

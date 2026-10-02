@@ -1,0 +1,23 @@
+Remove Settings “Store emoji” teaser block
+Date: 2026-09-17 ~22:23 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Tar: /workspace/supercrib-dist.tar.gz (flat tar of dist/)
+
+WHAT
+- Settings → Emoji tab: delete circled “Store emoji / Coming soon” locked teaser row
+  (STORE_TEASER_EMOJIS + lockedEmojis placeholders). Owned grid + Save/Friends/Back kept.
+- Store.tsx purchasable Clash emote shelf untouched. No unlock/rail/art changes.
+
+CLEANUP
+- src/ui/Settings.tsx: remove owned-emoji-coming block; drop STORE_TEASER_EMOJIS,
+  canUseMadFinger, lockedStoreEmojiIds imports; remove lockedEmojis useMemo.
+- src/profile/coins.ts: remove empty STORE_TEASER_EMOJIS export.
+- src/ui/emoji/reactEmojis.ts: remove lockedStoreEmojiIds helper.
+- src/ui/styles.css: remove .owned-emoji-coming / .owned-emoji-locked-row /
+  .owned-emoji-slot-locked / .owned-emoji-lock (teaser-only).
+
+DEPLOY
+- Live: https://supercrib241-baba2.web.app
+- desktop-preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app (expires 2026-10-17)
+
+TESTS: reactEmojis.test.ts 24 + coins.test.ts 27 = 51 passed; npm run build OK

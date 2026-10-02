@@ -1,0 +1,46 @@
+Score chips visible under opp hand — desktop-preview only
+Date: 2026-09-18 ~20:50 ADT (America/Halifax)
+Tree: /workspace/supercrib
+
+SYMPTOM (iPhone Safari, StinkHole online discard)
+- You / →241 / opp chips existed in Pegboard but sat UNDER Joe’s face-down
+  hand. Mid-zone `justify-content: center` + `overflow: hidden` + Dumpster
+  plank height shoved the score row up into the opp-card band; opp-row
+  stacking covered the chips.
+
+FIX (CSS only — Pegboard hole math untouched; VOICE_PTT_ENABLED left false)
+1. `.table-mid-zone`: `justify-content: flex-start`, `overflow-x: hidden;
+   overflow-y: visible`, `z-index: 8`, slightly more top padding.
+2. `.board-side-scores`: `z-index: 12`, `flex-shrink: 0`, pointer-events none.
+3. Discard/cut/show mid-zone: z-index 10, overflow-y visible, flex-start;
+   opp-row margin/padding-bottom increased, z-index 4 (below scores).
+4. Pegging mid-zone: overflow-y visible + z-index 10 (keep space-between).
+5. Dumpster phone shrink: --board-w 198→186 (≤520/≤780h), 184→172 (≤700h)
+   so plank yields room for the score row instead of covering it.
+6. Desktop @900 mid-zone: overflow-y visible; discard/cut/show overflow visible.
+
+FILES
+- src/ui/styles.css only
+- VOICE_PTT_ENABLED=false unchanged (voiceConfig / App / Table not reverted)
+
+VERIFY
+- npm test
+- npm run build
+
+DEPLOY
+- desktop-preview ONLY (no live):
+  https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+- Do NOT `firebase deploy --only hosting` until Josh greenlights.
+
+RETEST
+1. Hard-refresh desktop-preview on phone Safari.
+2. Online StinkHole discard while opp picks crib: chips visible BELOW Joe’s
+   backs (You / →241 / opp), not under cards.
+3. Cut / pegging / show: same — chips clear of opp hand.
+4. HOLD mic: ignore if still visible on live; preview should keep PTT gated off.
+
+VERIFY RESULTS (2026-09-18 ~20:48 ADT)
+- npm test → 431 passed
+- npm run build → OK (index-DwOlaAp5.css / index-OzRiGnDC.js)
+- channel deploy desktop-preview OK; live still on index-Bvq9Tsow.css (unchanged)
+- VOICE_PTT_ENABLED still false

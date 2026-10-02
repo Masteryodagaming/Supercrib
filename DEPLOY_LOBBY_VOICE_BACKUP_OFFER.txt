@@ -1,0 +1,91 @@
+Lobby voice — backup offerer (seat1 if seat0 silent) — desktop-preview ONLY
+Date: 2026-09-20 ~13:57 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Project: supercrib241-baba2
+
+Ask
+---
+Josh 1:51 PM — still FAILED after index-CBm9xbXZ “host offer” fix.
+Room A6BDG seat=1: "Host didn't send offer — reconnect"
+  bothReady=1 micAttached=1 offer=0 answer=0 seenOffer=0 rtdbAnswer=0 ice=new
+Guest timeout works; seat 0 still never writes offer. Preview only. Live untouched.
+Need: (A) prove why seat0 silent (B) backup offerer if no RTDB offer ~2s.
+
+A) RTDB dump A6BDG (2026-09-20 ~13:53 ADT)
+------------------------------------------
+  seats[0]=Dummy  connected=true
+  seats[1]=Dummy2 connected=true
+  voice.ready       = [true, true]   ← both Connect wrote ready
+  voice.offer       = ABSENT         ← seat 0 NEVER createOffer/wrote
+  voice.answer      = ABSENT
+  voice.renegotiate = present        ← guest bumped; host still silent
+  voice.talking     = [null, false]  ← seat 0 never completed mic-attach write
+  voice.ice / diag  = absent
+
+Why seat0 still failed
+----------------------
+1) Ready handshake completed in RTDB (bothReady would be true on any live
+   session listening to voice/ready). Offer SDP never appeared.
+2) talking[0]=null proves host mic adopt/ensureMic never finished
+   writeTalking(false) — mic path stalled or session never reached adopt.
+3) Prior fix (ensureLobbyHostOffer + allowOfferWithoutMic @1s) only helps
+   if the HOST device is running that build AND its PC/session is alive.
+   Guest got the new fail copy (CBm9xbXZ) — host may still have been on an
+   older cached bundle, or host PC disposed while ready heartbeat alone
+   kept ready[0]=true. Either way: hard-depending on seat 0 only is fragile.
+4) Guest timeout worked as designed; root is seat-0 offer publish, not answer.
+
+B) Backup offerer design
+------------------------
+- Seat 0 remains preferred initial offerer (unchanged path + mic grace).
+- After bothReady, if no RTDB offer for BACKUP_OFFER_WAIT_MS (2s), seat 1
+  (non-primary) sets backupOffererActive and createOffers itself.
+- Answerer = offer.from !== mySeat (already; works for from=0 or from=1).
+- One offer wins: first write / higher `at`; glare → polite peer (seat 1)
+  rolls back via setLocalDescription(rollback); impolite (seat 0) keeps.
+- Guest fail copy: "No offer — reconnect" ONLY if still no offer after the
+  backup window (+3s grace ≈ 5s total).
+- Seat Leave clears offer/answer regardless of which seat offered.
+- Lobby→table session hold unchanged. VAD on. PTT off. Live chat gate unchanged.
+
+Files
+-----
+- src/multiplayer/voicePtt.ts
+- src/multiplayer/lobbyVoice.ts
+- src/multiplayer/__tests__/voicePtt.test.ts
+- src/multiplayer/__tests__/lobbyVoice.test.ts
+
+Unchanged
+---------
+- VOICE_PTT_ENABLED = false
+- SIDE_LIVE_CHAT hostname gate (preview/localhost only; live OFF)
+- Lobby→table session hold (no mid-table Join maze)
+- Live hosting NOT deployed
+
+Tests / build
+-------------
+- vitest lobbyVoice + voicePtt + sideLiveChatUi — 51 passed
+- tsc --noEmit — passed
+- npm run build — passed (index-CiB7K_TC.js)
+- firebase hosting:channel:deploy desktop-preview --expires 30d
+
+Retest (two humans on preview — hard-refresh BOTH)
+--------------------------------------------------
+1. Hard-refresh BOTH devices on preview (must see index-CiB7K_TC.js).
+2. Create/Join room → Both here.
+3. BOTH tap Connect voice (allow mic) in lobby.
+4. Happy path: seat0 offers within ~1s → answer → green Live.
+5. Seat0 silent test: if host stuck, within ~2s guest debug may show
+   "Backup offer…" then offer=1 (from seat1); host answers → Live.
+6. If STILL no offer after ~5s: Failed "No offer — reconnect".
+7. Play → cut → deal → table keeps Live (session hold).
+8. Live site: no Connect voice control; live bundle unchanged.
+
+Deploy result (2026-09-20 13:57 ADT)
+------------------------------------
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  expires ~2026-10-20 13:56 ADT
+  serves index-CiB7K_TC.js / index-DfIg-i_g.css
+  (bundle contains "No offer — reconnect" / "Backup offer" / backup-offer-ok)
+- Live UNTOUCHED: https://supercrib241-baba2.web.app
+  still index-BG_0NujD.js (last release 2026-09-20 01:09 ADT)

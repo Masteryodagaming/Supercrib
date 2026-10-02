@@ -1,0 +1,7 @@
+{
+  "id": "mad_finger",
+  "durationMs": 1100,
+  "frames": ["f1.png", "f2.png", "f3.png"],
+  "frameDurationsMs": [150, 400, 550],
+  "note": "Ends on smirk (f3); smirk held longer"
+}

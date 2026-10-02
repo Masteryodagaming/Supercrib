@@ -1,0 +1,37 @@
+C&J Dumpster felt + Dummy full skin unlock — box build ready (no firebase deploy from box)
+
+A) Felt wiring
+id: cj_dumpster (CJ_DUMPSTER_FELT_ID)
+label: C&J Dumpster
+blurb: industrial dumpster cloth
+assets:
+  public/felts/cj-dumpster.jpg (784×1168) ?v=1
+  public/felts/cj-dumpster-thumb.jpg ?v=1
+code:
+  src/profile/felts.ts — theme + Dummy auto via isBoardSkinTestDummy; honor ownedFeltIds (no strip); Owner no auto
+  src/ui/styles.css — .app.felt-cj_dumpster table + overlays (mirror ZF)
+  tests: src/profile/__tests__/felts.test.ts + matchSkins Dummy felt picker
+unlock: Dummy auto (BOARD_SKIN_TEST_UID / joshuamilliea@icloud.com) OR ownedFeltIds gift/purchase
+Owner (j0shwa) does NOT auto-get felt (same as dumpster board).
+
+B) Dummy cloud unlock — PARENT MUST RUN ON MSI
+uid: cHYLDPXD6cSdZCtNmxv7hmg0VSI2
+patch (not wipe) users/{uid}/profile:
+  ownedBoardIds = ["default","zero_forge","cj_dumpster"]
+  ownedFeltIds  = ["felt","zero_forge","cj_dumpster"]
+  bump updatedAt
+scripts: /workspace/supercrib/scripts/dummy-unlock/{patch.json,msi-patch-dummy.ps1,PARENT_MSI_CMD.txt}
+machineId: b8a670af-0b3a-4878-86f4-8b98e0731cbc  project: supercrib241-baba2
+Dummy RTDB PATCH confirmed 2026-09-16 ~19:53 ADT via REST (same fields Joe gift path):
+  ownedBoardIds=["default","zero_forge","cj_dumpster"]
+  ownedFeltIds=["felt","zero_forge","cj_dumpster"]
+  updatedAt=1789599235818
+  other profile fields kept (PATCH not wipe).
+
+C) Optional interim
+Home ZF lockup: .app.felt-zero_forge:not(.app-playing) background-position left top / size auto 110% (no new art).
+
+D) Dist
+/workspace/supercrib-dist.tar.gz — flat tar of dist/ (includes felts/cj-dumpster*.jpg)
+Do NOT firebase deploy from this note — parent CopyFromBox + MSI hosting deploy.
+Pegboard hole math untouched.

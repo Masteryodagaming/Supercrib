@@ -1,0 +1,55 @@
+Cut SFX (card_cut.wav) on cut-for-deal + starter cut — 2026-09-19 ~23:12 ADT
+
+Ask
+---
+Josh: Make a card sound when cutting (cut-for-deal and starter cut). Should
+sound like a real card (same family as card slap / cut WAV — card_cut.wav /
+card_play*.wav), not coin/bucket. Preview ONLY. Do not promote live. Do not
+touch voice/chat.
+
+Fix
+---
+1. gameSfx.playCut() — already present; prefers card_cut.wav, falls back to
+   card_play1/2.wav then quiet cardboard synth (not peg/coin).
+2. CutForDeal: playCut on human tap; AI select; remote/online when cut card
+   lands. Dedupe via round-seat keys so tap + sync do not double-blast.
+   Spectators / waiting seats hear the cue when the cut lands.
+3. App starter cut: playCut on pone tap (onCut) and on AI/remote anim select
+   (shared dealNumber key — one cue per deal).
+4. Kept: Settings mute + unlock/withRunningCtx; peg prize only points > 0;
+   plain card play = card WAV only; VOICE_PTT_ENABLED = false.
+
+Files
+-----
+- src/audio/gameSfx.ts
+- src/audio/__tests__/gameSfx.test.ts
+- src/ui/CutForDeal.tsx
+- src/ui/App.tsx
+- public/sfx/README.txt
+- DEPLOY_CUT_SFX.txt (this note)
+- src/multiplayer/voiceConfig.ts (VOICE_PTT_ENABLED = false, unchanged)
+
+Verify
+------
+1. Hard-refresh desktop-preview on Chrome.
+2. Cut for deal (vs AI / hotseat / online): each cut → one cardboard cut cue.
+3. Online: waiting seat hears cut when opponent's card lands; no double blast.
+4. Starter cut (pone tap + dealer watching remote reveal + AI cut): one cue.
+5. Peg non-score = card slap only; scoring peg still wood + prize; mute works;
+   no Hold/PTT UI.
+
+Deploy (hard constraint)
+------------------------
+- desktop-preview ONLY — live NOT promoted
+- npm test / npm run build before deploy
+
+Deploy results
+--------------
+- npm test — 55 files / 516 tests passed
+- npm run build — passed (index-BVHZuAGF.css / index-BcmVFpKK.js)
+- desktop-preview channel deployed 2026-09-19 ~23:12 ADT
+- Preview serves index-BcmVFpKK.js
+- Live untouched (still index-OzRiGnDC.js — not promoted)
+- Preview URL: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (channel expires ~2026-10-19 23:11 ADT)
+- VOICE_PTT_ENABLED left false

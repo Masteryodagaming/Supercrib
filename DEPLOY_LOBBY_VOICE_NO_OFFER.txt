@@ -1,0 +1,80 @@
+Lobby voice — host never published offer (seat0) — desktop-preview ONLY
+Date: 2026-09-20 ~13:34 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Project: supercrib241-baba2
+
+Ask
+---
+Josh lobby Connect stuck Linking (seat=1) room A6BDG. Debug:
+  readyMe=1 peerReady=1 bothReady=1 micAttached=1 offer=0 answer=0 …
+Guest fine waiting — HOST never published offer. Opposite of mid-table answer=0.
+Preview only. Live untouched.
+
+RTDB dump (A6BDG @ ~13:28 ADT)
+-------------------------------
+  seats[0]=Dummy  connected=true
+  seats[1]=Dummy2 connected=false (guest UI still on Connect)
+  voice.ready  = [true, true]     ← both Connect wrote ready
+  voice.offer  = ABSENT           ← host never createdOffer/wrote
+  voice.answer = ABSENT
+  voice.renegotiate = 13:26:07    ← guest bumped; host still silent
+  voice.talking = [null, false]   ← host never completed mic-attach write
+
+Root cause
+----------
+1) shouldOfferOnceWhenBothLobbyReady lived only in unit tests — production
+   Connect path relied solely on VoicePttSession.kickNegotiate/maybeNegotiate.
+2) maybeNegotiate hard-gated on micAttached. Host ready=true with mic never
+   attached (reuse-session early-return skipped pending-mic adopt after
+   Table/StrictMode remount) → offer never written; guest Linking forever.
+3) Guest wait message was soft / 10s; host had no "offer never published" fail.
+
+Hard fix
+--------
+1) voicePtt.ts
+   - OFFER_RETRY_MS 2s → 1s; GUEST_OFFER_WAIT_MS 10s → 5s
+   - GUEST_NO_HOST_OFFER_MSG = "Host didn't send offer — reconnect"
+   - After both-ready: always startOfferRetryLoop; after 1s without mic,
+     allowOfferWithoutMic + force createOffer (transceiver already sendrecv)
+   - scheduleHostOfferPublishFail if offer SDP never lands in RTDB
+   - ensureLobbyHostOffer() / hasPublishedOffer() / isBothReady() public API
+2) lobbyVoice.ts
+   - Wire shouldOfferOnceWhenBothLobbyReady into kickLobbyHostOfferIfNeeded
+     (production Connect calls this — no longer tests-only)
+3) useSideLiveChat.ts
+   - Reused session no longer early-returns before pending-mic adopt
+   - Always kickLobbyHostOfferIfNeeded after announceReady
+4) Tests: both-ready → host must offer; guest fail copy
+
+Unchanged
+---------
+- VOICE_PTT_ENABLED = false
+- SIDE_LIVE_CHAT hostname gate (preview/localhost only; live OFF)
+- Lobby→table session hold (no mid-table Join maze resurrected)
+- Live hosting NOT deployed
+
+Tests / build
+-------------
+- vitest lobbyVoice + voicePtt + sideLiveChatUi — passed
+- tsc --noEmit — passed
+- npm run build — (see deploy)
+- firebase hosting:channel:deploy desktop-preview --expires 30d
+
+Retest (two humans on preview)
+------------------------------
+1. Hard-refresh BOTH devices on preview (new index-*.js).
+2. Create/Join room → Both here.
+3. BOTH tap Connect voice (allow mic) in lobby.
+4. Within ~1–2s: offer=1 then answer=1 → green Live.
+   If host mic lags: still offer within ~1s (without-mic grace).
+   If host never offers: guest Failed "Host didn't send offer — reconnect" ~5s.
+5. Play → cut → deal → table keeps Live (session hold).
+6. Live site: no Connect voice control.
+
+Deploy result (2026-09-20 13:34 ADT)
+------------------------------------
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  expires ~2026-10-20 13:34 ADT
+  serves index-CBm9xbXZ.js / index-DfIg-i_g.css
+  (bundle contains GUEST_NO_HOST_OFFER_MSG / ensureLobbyHostOffer / kickLobbyHostOfferIfNeeded)
+- Live UNTOUCHED: https://supercrib241-baba2.web.app

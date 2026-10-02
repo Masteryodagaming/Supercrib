@@ -1,0 +1,56 @@
+Clear stale Ref UI after hand segment ends — 2026-09-19 ~23:42 ADT
+
+Ask
+---
+After Competitive Adjust → Ref popup (adjuster right/wrong, true count,
+Original/Adjusted/Kept/Verdict), that Ref analysis UI stayed on screen when
+the hand was already over and the next hand claim had started (claim keypad
+typing). Josh: Ref info irrelevant once next claim typing starts — remove it.
+
+Fix
+---
+Clear / hide Ref modal + lastRef summary as soon as that show/hand scoring
+segment ends and play moves on — especially when entering the next claim
+phase. Do not rely only on manual Continue.
+
+How Ref is cleared
+------------------
+1. acknowledgeCompetitiveRef: clears pendingRef; keeps lastRef only when
+   pendingMuggins remains (same hand). If no muggins (step already advanced
+   to next claim / done), sets lastRef null so summary cannot linger.
+2. finalizeCompetitiveStep / resolveMugginsChoice / game-over underclaim:
+   explicitly set pendingRef: null and lastRef: null when advancing the
+   competitive show segment.
+3. ShowOverlay: lastRef banner only while pendingMuggins (same segment);
+   never under the next hand’s ClaimPad. pendingRef modal still blocks
+   claim until Continue (unchanged).
+
+Kept intact
+-----------
+- Approve path (no Ref modal)
+- Adjust → Ref → Muggins flow while Ref is still relevant
+- VOICE_PTT_ENABLED left false; no side chat
+
+Tests
+-----
+- Ref visible after Adjust; Claimant gated until ack
+- After ack with no muggins: lastRef/pendingRef null; next claimer active
+- Underclaim Adjust: lastRef kept through Muggins; cleared after muggins
+  resolve when next claim starts
+
+Deploy (hard constraint)
+------------------------
+- npm test — 55 files / 526 tests passed
+- npm run build — passed (index-Ds6xxoUC.css / index-BYnzlayH.js)
+- firebase hosting:channel:deploy desktop-preview ONLY (not live)
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (channel expires ~2026-10-19 23:33 ADT)
+- Live untouched (not promoted)
+
+Key files
+---------
+- src/engine/supercrib.ts (acknowledgeCompetitiveRef, finalizeCompetitiveStep,
+  resolveMugginsChoice, applyAnnouncedClaim clears)
+- src/ui/ShowOverlay.tsx (lastRef banner gated to pendingMuggins)
+- src/engine/__tests__/competitiveScoring.test.ts
+- DEPLOY_CLEAR_STALE_REF.txt (this note)

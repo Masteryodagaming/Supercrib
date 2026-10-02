@@ -1,0 +1,71 @@
+Voice PTT — ready handshake + mic UX + ICE gather (fix stuck "Connecting voice…")
+Date: 2026-09-18 ~17:02 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Tar: /workspace/supercrib-dist.tar.gz (flat tar of dist/)
+
+SYMPTOM (iPhone Safari)
+- Local UI stuck on "Connecting voice…" (status connecting/ready, never live)
+- Safari address bar shows mic blocked/muted icon
+- On Hold, remote sees "Voice not linked" (talking RTDB fires, peerLive false)
+
+FIXES
+
+A) Handshake before offer (voicePtt.ts)
+- Each seat writes voice/ready/{seat}: true after PC created + signaling bound.
+- Host creates the first offer only when BOTH ready/0 and ready/1 are true
+  (onValue on voice/ready). Removes race where host offers before guest listens
+  / host wipes SDP on late join.
+- Removed eager maybeNegotiate() at end of start(); onnegotiationneeded also
+  gated on bothReady.
+
+B) Do not claim ready as almost-live
+- start() stays on status 'connecting' (never sets 'ready' just because PC exists).
+- Status detail: "Waiting for opponent…" → "Linking…" → live / error / denied.
+- App voiceStatusHint uses statusDetail (or "Connecting voice…" fallback).
+
+C) Only publish talking when live
+- writeTalking(true) only if connectionState===connected OR ice connected/completed.
+- Hold while !live: ensureMic, kick renegotiate, show "Still connecting…";
+  do NOT set remote talking flag (stops "Voice not linked" spam).
+
+D) Mic permission (Safari)
+- NotAllowedError → status denied + unmistakable hint:
+  "Mic blocked — tap the mic icon in Safari’s address bar and Allow, then Hold again"
+- Inline error held ~10s.
+
+E) Stronger ICE
+- Google STUN + stun:stun.cloudflare.com:3478 + OpenRelay TURN (no Twilio).
+- ICE candidate buffer until remote description (unchanged).
+- After first Hold post both-ready, if still !live >2s, host forces
+  { iceRestart: true } offer once.
+- Mic replaceTrack renegotiates only after both-ready.
+
+F) Offer/answer wait for ICE gather
+- After setLocalDescription, wait for iceGatheringState===complete OR 1.5s
+  timeout, then write localDescription SDP to RTDB (candidates in SDP).
+- Trickle via onicecandidate still continues; remote buffer/flush kept.
+
+FILES
+- src/multiplayer/voicePtt.ts
+- src/multiplayer/useVoicePtt.ts
+- src/ui/App.tsx (statusDetail hints)
+- src/multiplayer/__tests__/voicePtt.test.ts
+- PushToTalkButton.tsx unchanged (layout/emoji untouched)
+
+VERIFY
+- npm test -- src/multiplayer/__tests__/voicePtt.test.ts  (9 passed)
+- npm run build  OK
+
+DEPLOY
+- Live: https://supercrib241-baba2.web.app
+- desktop-preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+
+HOW TO VERIFY (both devices)
+1. Hard-refresh BOTH devices (live or desktop-preview).
+2. On iPhone: tap the mic icon in Safari’s address bar → Allow, then Hold again.
+3. Both players Hold once; wait until "Connecting voice…" / "Linking…" disappears
+   (status live). Then talk — Opp pulse only when peerLive.
+4. You should NOT see remote "Voice not linked" while the link is still coming up
+   (talking flag only publishes when live).
+5. Same Wi‑Fi should work even without TURN; cellular uses OpenRelay TURN.
+6. Vs AI / table layout / emoji rails unchanged.

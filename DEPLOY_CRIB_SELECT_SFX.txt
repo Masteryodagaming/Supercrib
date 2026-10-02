@@ -1,0 +1,54 @@
+Crib discard card-tap SFX — 2026-09-19 ~23:34 ADT
+
+Ask
+---
+Josh (screenshot): On discard “YOU · DEALER — PICK 3 FOR CRIB” with cards
+raised when selected, wants a sound when you tap a card to select/deselect
+for crib. Same hand-tap toggle-select pattern elsewhere if identical (primary
+is crib discard). Preview ONLY. Do not promote live. Do not touch voice/chat.
+
+Fix
+---
+1. gameSfx.playCardSelect(soft?) — soft card cue (prefers card_cut.wav quieter,
+   else card_play1/2, else quiet deal synth). Select gain 0.42; deselect soft
+   0.28. 50ms debounce so multi-fire / online rev-retry does not spam.
+2. App.onToggleDiscard — play outside applyLocal when toggle will actually
+   change selection (wasSelected → soft deselect; else select). No cue on
+   no-op (already at pick-N max / card not in hand).
+3. Only hand toggle-select path is crib discard (peg taps remain playCard /
+   playPeg). Kept: mute + unlock/withRunningCtx; peg prize only points > 0;
+   cut SFX; plain card slap; VOICE_PTT_ENABLED = false.
+
+Files
+-----
+- src/audio/gameSfx.ts
+- src/audio/__tests__/gameSfx.test.ts
+- src/ui/App.tsx
+- public/sfx/README.txt
+- DEPLOY_CRIB_SELECT_SFX.txt (this note)
+- src/multiplayer/voiceConfig.ts (VOICE_PTT_ENABLED = false, unchanged)
+
+Verify
+------
+1. Hard-refresh desktop-preview on Chrome.
+2. Discard phase: tap a hand card to raise for crib → soft card cut/slap.
+3. Tap again to deselect → quieter same-family cue.
+4. Rapid double-tap / online: no SFX spam; mute still silences.
+5. Peg non-score = card slap only; scoring peg still wood + prize; cut SFX
+   unchanged; no Hold/PTT UI.
+
+Deploy (hard constraint)
+------------------------
+- desktop-preview ONLY — live NOT promoted
+- npm test / npm run build before deploy
+
+Deploy results
+--------------
+- npm test — 55 files / 524 tests passed
+- npm run build — passed (index-Ds6xxoUC.css / index-C4_2E-Mh.js)
+- desktop-preview channel deployed 2026-09-19 ~23:34 ADT
+- Preview serves index-C4_2E-Mh.js
+- Live untouched (still index-OzRiGnDC.js — not promoted)
+- Preview URL: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (channel expires ~2026-10-19 23:33 ADT)
+- VOICE_PTT_ENABLED left false

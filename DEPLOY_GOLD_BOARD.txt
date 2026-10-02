@@ -1,0 +1,51 @@
+Gold pegboard — Store + Yoda gift + board preview
+Date: 2026-09-18 ~03:03 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Tar: /workspace/supercrib-dist.tar.gz (flat tar of dist/)
+
+ART (paint-only; Pegboard hole math untouched)
+- Source: agent attachment polished gold plank (1168×1680)
+- Face-crop to plank ~280:400 → 1168×1669 (full res — NOT downscaled to 896×1280)
+- public/boards/gold.jpg        1168×1669  ~679 KB  (?v=1)
+- public/boards/gold-thumb.jpg   358×512   ~58 KB   (?v=1)
+- CSS: .app.board-gold .board-wood-plank → center / 100% 100% no-repeat
+- Hide SVG maple/path/line decade labels + finish group; keep hole-dots/pegs
+- No painted gray/gold track underlay mute needed (recessed gold holes only)
+
+REGISTER
+- boards.ts: id gold, label Gold, blurb "Polished gold plank",
+  thumbClass owned-board-swatch-gold; unlock via ownedBoardIds only (no Dummy auto)
+- App applies board-${id} → app.board-gold (same as Arena/ZF/Dumpster)
+- Settings Owned Boards lists Gold when owned
+
+STORE (src/profile/coins.ts)
+- board_gold — kind board — glyph 🥇 — price 500 SC
+  imageSrc /boards/gold-thumb.jpg?v=1 — unlockId gold
+- buyShopItemOnProfile grants gold onto ownedBoardIds (same as arena)
+- Arena / ZF / Dumpster board rows unchanged
+
+PREVIEW (src/ui/Store.tsx)
+- BOARD shelf: art + name open lightbox of full play plank
+  (zero_forge → /boards/zero-forge.jpg?v=3,
+   cj_dumpster → /boards/cj-dumpster.jpg?v=17,
+   arena → /boards/arena.jpg?v=2,
+   gold → /boards/gold.jpg?v=1)
+- Buy stays separate; Escape / backdrop closes
+- Felt shelf unchanged
+
+YODA GIFT (uid CphdDQWSDQbCf58rAMpo78wtFFm2)
+- ownedBoardIds after merge: ["default","cj_dumpster","arena","gold"]
+- settings.board left as arena (NOT auto-equipped)
+- avatarGift push: board:gold / "Gold Board" / fromName Zero Forge Labs
+  pushId -P1n6DXt2wj5v-CtC73i  at 1789711409155
+- Joseph Francis NOT gifted
+
+DEPLOY
+- Live: https://supercrib241-baba2.web.app
+- desktop-preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (expires 2026-10-18 ~03:03 ADT)
+
+VERIFY
+- Live /boards/gold.jpg?v=1 → 200, 695712 bytes
+- Live CSS: .board-gold .board-wood-plank center/100%100%; path+line visibility:hidden
+- Tests: boards.test.ts 13 + coins.test.ts 29 = 42 passed; npm run build OK

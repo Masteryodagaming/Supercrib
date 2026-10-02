@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" fill="none">
+  <defs>
+    <linearGradient id="felt" x1="12" y1="12" x2="84" y2="84" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1a6b4a"/><stop offset=".5" stop-color="#0f4a3a"/><stop offset="1" stop-color="#08261e"/>
+    </linearGradient>
+    <linearGradient id="g" x1="20" y1="8" x2="76" y2="88" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff8d6"/><stop offset=".5" stop-color="#d4af37"/><stop offset="1" stop-color="#8b6914"/>
+    </linearGradient>
+    <pattern id="dots" width="8" height="8" patternUnits="userSpaceOnUse">
+      <circle cx="1.5" cy="1.5" r=".7" fill="#0a3a2a" opacity=".55"/>
+    </pattern>
+  </defs>
+  <circle cx="48" cy="48" r="46" fill="#1a1408" stroke="url(#g)" stroke-width="3"/>
+  <rect x="22" y="22" width="52" height="52" rx="8" fill="url(#felt)"/>
+  <rect x="22" y="22" width="52" height="52" rx="8" fill="url(#dots)"/>
+  <rect x="22" y="22" width="52" height="52" rx="8" stroke="#d4af37" stroke-opacity=".45" stroke-width="1.5"/>
+  <path d="M30 48h36M48 30v36" stroke="#d4af37" stroke-opacity=".2" stroke-width="1"/>
+</svg>

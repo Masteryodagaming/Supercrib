@@ -1,0 +1,107 @@
+Side live chat stuck CONNECTING — deeper fix — desktop-preview ONLY
+Date: 2026-09-20 ~08:04 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Project: supercrib241-baba2
+
+Ask
+---
+Josh screenshot (desktop Chrome preview): after Join live chat → Leave + red
+CONNECTING… + "Waiting for opponent…" forever; never green Live. Prior
+DEPLOY_SIDE_CHAT_CONNECT.txt pass was insufficient. Preview only. Live
+untouched. VOICE_PTT_ENABLED stays false. Do not regress cut+COUNT CSS.
+
+Investigation (RTDB + code)
+--------------------------
+Live room TG4DX (Dummy2 vs Dummy, both seats connected) had voice.ready =
+[true, false] for minutes — seat 1 never stuck ready=true. UI copy
+"Waiting for opponent…" is the bothReady=false branch (not ICE Linking).
+
+Root causes found
+-----------------
+1) ready=false strand on remount (primary handshake bug)
+   start() wrote ready/{seat}=false, then async mic/adopt/announceReady.
+   Effect teardown (enabled / bothConnected flicker, Strict-ish remount)
+   cancelled before announceReady → RTDB left false while UI still Join/Leave
+   + CONNECTING. Peer waits forever. Re-assert only helps if readyAnnounced
+   was already true.
+
+2) Dead TURN from prior "fix"
+   freeturn.net / freeturn.tel do not resolve in public DNS (ENOTFOUND).
+   Prior ICE list was STUN-only in practice for relay NATs. OpenRelay
+   openrelayproject/openrelayproject static user/pass is API-gated.
+
+3) Guest answered offers before mic attach → recvonly SDP
+   RTDB U2K5B answer had a=recvonly. Guest bindSignaling listened for offers
+   during start() before adoptMicStream; host could offer on stale both-ready.
+   Guest maybeNegotiate is host-only so late replaceTrack never re-offered.
+
+4) Infinite CONNECTING on ICE fail
+   Link watchdog restarted ICE once then stayed on connecting forever — no
+   terminal failed state.
+
+Fix
+---
+1) voicePtt.ts
+   - Do NOT write ready/{seat}=false on start(); clear ready only on full
+     dispose(stopMic).
+   - Ready heartbeat while joined + !live (re-publish true).
+   - isSeatVoiceReady() handles RTDB array/map shapes.
+   - buildVoiceIceServers(): Open Relay static-auth HMAC TURN
+     (staticauth.openrelay.metered.ca + openrelayprojectsecret) + STUN.
+   - Queue remote offers until micAttached; flush after adopt/ensureMic.
+   - Guest bump voice/renegotiate → host re-offers (late mic / recvonly).
+   - needsRenegotiate retried in maybeNegotiate finally (not only on answer).
+   - Peer-wait hint (12s) / fail (45s); link-fail (8s after ICE restart) →
+     status error with clear copy (not infinite CONNECTING).
+
+2) useSideLiveChat.ts
+   - Session effect no longer depends on enabled / bothConnected for PC
+     lifecycle (those flickers were cancelling announceReady).
+   - Join still requires bothConnected; full teardown only on leave /
+     unavailable / no code.
+
+3) SideLiveChatButton.tsx
+   - offline/error label → "Failed" (was misleading "Live").
+
+Unchanged (as required)
+-----------------------
+- VOICE_PTT_ENABLED = false
+- SIDE_LIVE_CHAT_ENABLED + isSideLiveChatEnabled(hostname)
+  ON: --desktop-preview- / localhost / 127.0.0.1
+  OFF: live hosts
+- Cut+COUNT CSS: meta z-index 12, mid-zone 18, overflow visible,
+  cut-watching full opacity (css tests still pass)
+
+Files
+-----
+- src/multiplayer/voicePtt.ts
+- src/multiplayer/useSideLiveChat.ts
+- src/ui/SideLiveChatButton.tsx
+- src/multiplayer/__tests__/voicePtt.test.ts
+- DEPLOY_SIDE_CHAT_STUCK_CONNECTING.txt (this note)
+
+Tests / build
+-------------
+- npm test — 60 files / 553 tests passed
+- npm run build — passed
+  - dist/assets/index-DlKOkyrR.js (943.94 kB)
+  - dist/assets/index-QmjC4Aj0.css (182.21 kB)
+
+Deploy
+------
+- firebase hosting:channel:deploy desktop-preview --expires 30d
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (expires ~2026-10-20 08:04 ADT)
+  serves index-DlKOkyrR.js / index-QmjC4Aj0.css
+- Live UNTOUCHED: https://supercrib241-baba2.web.app
+  still index-BG_0NujD.js / index-QmjC4Aj0.css
+  (no staticauth / chat fail copy in live bundle; chat still hostname-gated off)
+
+How Josh should retest (two devices on preview)
+-----------------------------------------------
+1. Hard-refresh desktop-preview on BOTH devices (Cmd/Ctrl+Shift+R).
+2. Online match; each taps Join live chat (allow mic).
+3. Status → green Live when WebRTC linked; red CONNECTING only while
+   actually waiting/linking; clear Failed if peer never joins or ICE dies.
+4. Speak freely (VAD) — peer should hear without PTT; Leave → Join again.
+5. Live site: no Join live chat control (hostname gate).

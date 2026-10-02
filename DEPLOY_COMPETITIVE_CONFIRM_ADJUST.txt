@@ -1,0 +1,59 @@
+Competitive Confirm/Adjust + Show no-scroll + Dummy2 cut — 2026-09-19 ~22:22 ADT
+
+Asks
+----
+1. After each Competitive hand/crib claim, opponent Confirm or Adjust
+   (not only Accept/Muggins on underclaim).
+2. No vertical scrollbar on Show/count overlay.
+3. Dummy2 (vs AI) cut clearly visible (cut-for-deal AI fan was too fast).
+Online + vs AI. Preview only. steal×2 / raw claim / SFX / voice off kept.
+Did not touch gameSfx.ts (parallel SFX agent).
+
+Confirm / Adjust flow
+---------------------
+1. Claimant submits → pendingReview { step, scorer, claimed } (no peg yet).
+2. Opponent:
+   - Confirm → keep claim → applyAnnouncedClaim(claimed)
+   - Adjust → keypad → applyAnnouncedClaim(adjusted)  // replaces claim
+3. applyAnnouncedClaim = former resolve path:
+   exact / overclaim snap + steal×2 / underclaim → pendingMuggins Accept|Muggins.
+AI: confirms pending reviews; still takes muggins on underclaims; honest raw claims.
+
+Show scrollbar
+--------------
+.show-overlay overflow: hidden (was auto); tighter hand blocks + smaller fans;
+desktop max-height min(92dvh, 700px) + overflow hidden.
+
+Dummy2 cut
+----------
+CUT_DEAL_AI_SELECT_MS 900 / REVEAL 3200 (was 550 / 1600); longer face-up hold
+(~select@900 → reveal@1900 → done@3200); cut-for-deal AI fan highlight CSS.
+
+How to test on preview
+----------------------
+1. Hard-refresh desktop-preview.
+2. Competitive vs AI: claim → opponent Confirm/Adjust; Adjust replaces count;
+   underclaim still Muggins after Confirm.
+3. Online Competitive: same seat-gated Confirm/Adjust.
+4. Show summary: no vertical scrollbar on overlay.
+5. vs AI cut-for-deal: after you cut, watch Dummy2 fan → select → reveal (~3.2s).
+
+Deploy (hard constraint)
+------------------------
+- npm test — 53 files / 487 tests passed
+- npm run build — passed (index-DIb1bZUY.css / index-BrUmLesV.js)
+- firebase hosting:channel:deploy desktop-preview ONLY (not live)
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (channel expires ~2026-10-19 21:42 ADT)
+- Live untouched (not promoted)
+- VOICE_PTT_ENABLED left false; gameSfx.ts untouched this pass
+
+Key files
+---------
+- src/engine/supercrib.ts (pendingReview, confirmShowClaim, adjustShowClaim)
+- src/engine/ai.ts, src/engine/__tests__/competitiveScoring.test.ts
+- src/ui/ShowOverlay.tsx, Table.tsx, App.tsx, Rules.tsx
+- src/multiplayer/serialize.ts (+ serialize test)
+- src/ui/styles.css, src/ui/__tests__/showOverlayNoScroll.css.test.ts
+- src/ui/playPace.ts, CutForDeal.tsx
+- DEPLOY_COMPETITIVE_CONFIRM_ADJUST.txt (this note)

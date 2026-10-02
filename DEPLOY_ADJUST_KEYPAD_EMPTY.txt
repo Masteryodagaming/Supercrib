@@ -1,0 +1,43 @@
+Adjust keypad starts empty — 2026-09-19 ~23:21 ADT
+
+Ask
+---
+When Adjusting a hand (opponent counted wrong), the number keypad was
+pre-filled with their claimed total. Typing a correction (e.g. they said
+12, you type 14) concatenated digits instead of replacing → wrong total.
+Preview only. Do NOT promote live. No voice/chat.
+
+Fix
+---
+1. Approve/Adjust → Adjust: initialize claim input to 0 / blank display.
+   Do NOT seed with pendingReview.claimed.
+2. Show original claimed total as separate copy: “Their hand: N”.
+3. ClaimPad display blank when value === 0 so first digit feels like replace
+   (appendClaimDigit(0, d) already replaces functionally).
+4. Same ClaimPad path for pone / dealer / crib review (online + vs AI).
+
+How to test on preview
+----------------------
+1. Hard-refresh desktop-preview.
+2. Competitive vs Dummy2: announce wrong total (e.g. 12) → Adjust → keypad
+   blank / “Their hand: 12” → type 14 → submit 14 (not 1214 / capped junk).
+3. Approve path unchanged.
+4. Online Competitive: same empty Adjust pad for respondent seat.
+5. pone / dealer / crib review steps all use the same Adjust UI.
+
+Deploy (hard constraint)
+------------------------
+- npm test — 55 files / 519 tests passed
+- npm run build — passed (index-BDAaYLOm.css / index-DGu1k_bB.js)
+- firebase hosting:channel:deploy desktop-preview ONLY (not live)
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (channel expires ~2026-10-19 23:21 ADT)
+- Live untouched (not promoted)
+- VOICE_PTT_ENABLED left false
+
+Key files
+---------
+- src/ui/ShowOverlay.tsx (Adjust → setClaim(0); Their hand label; blank display)
+- src/ui/styles.css (.claim-their-hand; claim-display min-height)
+- src/ui/__tests__/claimKeypad.test.ts (empty-start / no-concat)
+- DEPLOY_ADJUST_KEYPAD_EMPTY.txt (this note)

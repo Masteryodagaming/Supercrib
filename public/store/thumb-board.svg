@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" fill="none">
+  <defs>
+    <linearGradient id="wood" x1="18" y1="14" x2="78" y2="82" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8b5a2b"/><stop offset=".45" stop-color="#6b3f1a"/><stop offset="1" stop-color="#3d2410"/>
+    </linearGradient>
+    <linearGradient id="g" x1="20" y1="8" x2="76" y2="88" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff8d6"/><stop offset=".5" stop-color="#d4af37"/><stop offset="1" stop-color="#8b6914"/>
+    </linearGradient>
+    <linearGradient id="peg" x1="58" y1="28" x2="70" y2="52" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffe9a8"/><stop offset="1" stop-color="#a67c00"/>
+    </linearGradient>
+  </defs>
+  <circle cx="48" cy="48" r="46" fill="#120c06" stroke="url(#g)" stroke-width="3"/>
+  <rect x="20" y="24" width="56" height="48" rx="6" fill="url(#wood)"/>
+  <g fill="#2a180c">
+    <circle cx="32" cy="36" r="2.4"/><circle cx="44" cy="36" r="2.4"/><circle cx="56" cy="36" r="2.4"/><circle cx="68" cy="36" r="2.4"/>
+    <circle cx="32" cy="48" r="2.4"/><circle cx="44" cy="48" r="2.4"/><circle cx="56" cy="48" r="2.4"/><circle cx="68" cy="48" r="2.4"/>
+    <circle cx="32" cy="60" r="2.4"/><circle cx="44" cy="60" r="2.4"/><circle cx="56" cy="60" r="2.4"/><circle cx="68" cy="60" r="2.4"/>
+  </g>
+  <rect x="54" y="30" width="6" height="18" rx="2" fill="url(#peg)"/>
+  <circle cx="57" cy="28" r="4" fill="url(#peg)"/>
+</svg>

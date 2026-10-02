@@ -1,0 +1,102 @@
+Side live chat — guest answer never published (ICE gather block) — desktop-preview ONLY
+Date: 2026-09-20 ~12:45 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Project: supercrib241-baba2
+
+Ask
+---
+Josh retest FAILED (iPhone Safari seat 0). Debug:
+  readyMe=1 peerReady=1 bothReady=1 micAttached=1
+  offer=1 answer=0 ice=new conn=new seat=0
+Badge FAILED — "Voice link failed — Leave and Join again"
+Ready-wipe + host offer path fixed prior; stuck on guest never writing answer.
+Preview only. Live untouched. Chat gated off live. Keep forgot-password.
+
+RTDB evidence (room MT22J, created 12:37:09 ADT)
+-----------------------------------------------
+  seats[0]=Dummy2 connected  seats[1]=Dummy connected
+  voice.ready  = [true, true]
+  voice.offer  = PRESENT (from=0, at 12:40:26 ADT, sdpLen=1427, sendrecv)
+  voice.answer = ABSENT
+  voice.ice    = only seat 0 (host+srflx); ice/1 ABSENT
+  renegotiate  = ABSENT
+So host offered; guest never setLocalDescription/answer (no ice/1 either
+before this fix — gather-wait + lost-pending compounded).
+
+Root cause (code-level)
+-----------------------
+voicePtt.ts onRemoteOffer AFTER createAnswer/setLocalDescription did:
+
+  await this.waitForIceGatheringComplete();  // up to 1.5s — and blocked publish
+  await set(.../answer, ...)
+
+Same pattern on host maybeNegotiate before writing offer.
+Trickle ice/{seat} already exists via onicecandidate. Blocking RTDB SDP
+publish on gather delayed / raced the host link-watchdog (3.5s+8s Failed)
+with answer=0 ice=new. Glare/mic path could also drop an offer without
+keeping pending for retry (signalingState early return with no stash).
+
+Exact skip that prevented createAnswer (pre-fix, still relevant):
+  if (!this.micAttached) { pendingRemoteOffer = payload; return; }
+  if (state !== 'stable' && state !== 'have-remote-offer') { return; } // LOST offer
+
+Hard fix
+--------
+1) Publish offer/answer to RTDB IMMEDIATELY after setLocalDescription.
+   Removed waitForIceGatheringComplete from both paths (trickle remains).
+2) Guest always retains latest offer in pendingRemoteOffer; glare defer
+   no longer drops it; answer retry loop every 2s while seenOffer &&
+   !wroteAnswer && micAttached.
+3) flushPendingRemoteOffer + kickNegotiate + bothReady guest path all
+   flush + startAnswerRetryLoop.
+4) coerceSeatFrom accepts number | "0"|"1" for isVoiceSdpPayload.
+5) Debug: seenOffer= wroteAnswer= on each seat.
+6) clearSeatVoiceSignaling unchanged — seat-scoped; only host Leave
+   nulls offer/answer.
+
+Unchanged
+---------
+- VOICE_PTT_ENABLED = false
+- SIDE_LIVE_CHAT hostname gate (preview/localhost only; live OFF)
+- Forgot password (authPasswordReset tests pass)
+- Cut+COUNT CSS tests pass
+- Live hosting NOT deployed
+
+Files
+-----
+- src/multiplayer/voicePtt.ts
+- src/multiplayer/__tests__/voicePtt.test.ts
+- DEPLOY_SIDE_CHAT_NO_ANSWER.txt (this note)
+
+Tests / build
+-------------
+- npm test — 61 files / 564 tests passed
+- npm run build — passed
+  - dist/assets/index-DtZIuNwj.js (951.04 kB)
+  - dist/assets/index-a-wGPlVg.css (182.98 kB)
+
+Deploy
+------
+- firebase hosting:channel:deploy desktop-preview --expires 30d
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (expires ~2026-10-20 12:46 ADT)
+  serves index-DtZIuNwj.js / index-a-wGPlVg.css
+  (bundle contains seenOffer=, wroteAnswer=)
+- Live UNTOUCHED: https://supercrib241-baba2.web.app
+  still index-BG_0NujD.js / index-QmjC4Aj0.css
+
+Exact retest (two devices on preview)
+-------------------------------------
+1. Hard-refresh BOTH (Network must show index-DtZIuNwj.js).
+2. Online match; both Join live chat (allow mic).
+3. Healthy debug within ~2s, e.g.:
+     readyMe=1 peerReady=1 bothReady=1 micAttached=1
+     offer=1 answer=1 seenOffer=1 wroteAnswer=1
+     ice=connected conn=connected seat=0
+   Badge → green Live.
+4. If still red, screenshot full debug line:
+   - seenOffer=0 → guest never got offer listener
+   - seenOffer=1 wroteAnswer=0 → answer path still stuck (say so)
+   - answer=1 ice stuck → TURN/NAT
+5. Leave one seat must NOT wipe the other's ready.
+6. Live site: no Join live chat control.

@@ -1,0 +1,18 @@
+Desktop in-match fill (kill green letterbox) — 2026-09-16 ~22:08 ADT
+
+CSS-only (src/ui/styles.css desktop block @900 / @1100):
+  - .app.app-playing: max-width 100% + width 100% (was min(720px)/min(820px))
+  - --board-w: clamp(260px, 30vw, 400px) @900; clamp(300px, 28vw, 460px) @1100
+  - Home/menus stay framed (680/780). Phone ≤430–520 unchanged.
+  - Pegboard hole math / Dumpster plank paint / ZF siderail: untouched.
+
+Deploy:
+  firebase deploy --only hosting --project supercrib241-baba2
+  firebase hosting:channel:deploy desktop-preview --project supercrib241-baba2
+
+URLs:
+  Live: https://supercrib241-baba2.web.app
+  Channel: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  Console: https://console.firebase.google.com/project/supercrib241-baba2/overview
+
+Josh verify: hard-refresh desktop-preview → Vs AI in-match → no/less green side letterbox; board larger/fit.

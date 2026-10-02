@@ -1,0 +1,52 @@
+Profile reset fix + Zero Forge for Master Yoda (2026-09-16 AT ~06:42)
+
+Root cause:
+1) Fresh login created createDefaultProfile() with updatedAt=now, so mergeProfiles
+   treated empty local defaults as newer and overwrote cloud Master Yoda / presets,
+   then pushCloudProfile persisted the wipe.
+2) mergeProfiles used (base.displayName || other) so "Player" beat "Master Yoda";
+   settings / equippedRail always took the newer side even when that side was pure defaults.
+3) migrateMasterYodaSelection(owner) forced crib_master whenever avatarDataUrl was set,
+   wiping an intentional gold peg selection.
+4) Zero Forge board (and felt) were Dummy-UID only — owner (j0shwa@hotmail.com) locked out.
+
+Fixes:
+- hydrate: missing local → seed with updatedAt=0 so cloud wins
+- mergeProfiles: pickMergedDisplayName / pickMergedAvatar / pickMergedSettings /
+  pickMergedEquippedRail (never let Player wipe custom names; prefer non-default
+  felt/board/rail; newer avatarId so peg sticks)
+- migrate: master_yoda→crib_master only; clear orphan dataUrl without forcing crib_master over peg
+- canUseZeroForgeBoard/Felt + effectiveOwned* for Dummy OR isOwner; matchSkins/Settings/App wired with email
+
+Files changed:
+  src/profile/cloudSync.ts
+  src/profile/avatars.ts
+  src/profile/boards.ts
+  src/profile/felts.ts
+  src/profile/matchSkins.ts
+  src/ui/Settings.tsx
+  src/ui/MatchSkinPicker.tsx
+  src/ui/App.tsx
+  src/profile/__tests__/cloudSync.test.ts
+  src/profile/__tests__/avatars.test.ts
+  src/profile/__tests__/matchSkins.test.ts
+
+Box artifacts ready:
+  /workspace/supercrib-dist.tar.gz  (flat tar of dist/)
+  /workspace/supercrib/dist/        (built; index.html at dist root)
+
+MSI path (machineId b8a670af-0b3a-4878-86f4-8b98e0731cbc):
+  1) CopyFromBox /workspace/supercrib-dist.tar.gz
+       -> C:\Users\J0shw\Downloads\supercrib-dist.tar.gz
+  2) Wipe+extract flat into C:\Users\J0shw\Downloads\supercrib\supercrib\dist
+       (index.html must land in dist/)
+  3) cd C:\Users\J0shw\Downloads\supercrib\supercrib
+     npx.cmd firebase deploy --only hosting
+     npx.cmd firebase hosting:channel:deploy desktop-preview
+
+Expected:
+  https://supercrib241-baba2.web.app
+  + desktop-preview channel URL from firebase output
+
+NOTE: This subagent has no cursor MCP (CopyFromBox/ListMachines).
+Parent must run CopyFromBox + MSI firebase deploy.

@@ -1,0 +1,85 @@
+Host voice ready sticks (held session) + guest wait UX — desktop-preview ONLY
+Date: 2026-09-20 ~15:14 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Project: supercrib241-baba2
+
+Ask
+---
+Live RTDB room A6BDG (~15:07 ADT): Josh seat=1 readyMe=1 peerReady=0 bothReady=0
+CONNECTING “Waiting for opponent…”. RTDB ready=[false,true], offer/answer ABSENT,
+diag[1]=backup-offer-ok (stale). Game lobby “Both here” but host voice never sticks ready.
+Preview only. Live untouched.
+
+Why ready[0] was false
+----------------------
+1) Fail-closed ready poll (post host-answer/backup deploy) used sessionRef only.
+   On transient remount / StrictMode rebind, sessionRef can be briefly null while
+   getHeldLobbyVoiceSession() still holds a live PC + signaling.
+2) Poll then published ready/{0}=false and (when callbacks were cancelled) often
+   failed to surface host Failed — guest spun forever on peerReady=0.
+3) Guest peer-wait was 45s with “Opponent hasn’t joined chat…” — looked like
+   infinite CONNECTING; backup offer correctly waits for bothReady (OK once host
+   ready sticks).
+
+Hard fix
+--------
+1) Host Connect reliability:
+   - Ready poll resolves session via getHeldLobbyVoiceSession() first
+     (resolveVoiceSessionForReadyPoll).
+   - shouldFailClosedWithoutVoiceSession / shouldClearVoiceReadyOnFailClosed
+     must NOT clear ready when heldSessionAlive / heldCanPublish.
+   - Truly dead → Failed “Voice session dead — tap Connect voice again”.
+2) Guest UX when peerReady=0:
+   - Status “Waiting for host to tap Connect voice”
+   - Failed after PEER_WAIT_FAIL_MS = 15s (same copy)
+   - Backup offer still only after bothReady (unchanged).
+3) Lobby UI both seats:
+   - Pulse Connect voice when both-connected and this seat not joined.
+   - When joined waiting on peer: “{peerName} needs Connect”.
+4) Lobby→table hold, VAD, no PTT, live hosting untouched.
+
+Files
+-----
+- src/multiplayer/voicePtt.ts
+- src/multiplayer/useSideLiveChat.ts
+- src/ui/SideLiveChatButton.tsx
+- src/ui/OnlineLobby.tsx
+- src/ui/App.tsx
+- src/ui/styles.css
+- src/multiplayer/__tests__/voicePtt.test.ts
+- src/multiplayer/__tests__/sideLiveChatUi.test.ts
+- DEPLOY_HOST_VOICE_READY_STICK.txt (this note)
+
+Tests / build
+-------------
+- vitest voicePtt + lobbyVoice + sideLiveChatUi — 59 passed
+- tsc --noEmit — passed
+- npm run build — passed (index-DgWxJm6W.js / index-BLP8avTE.css)
+
+Deploy
+------
+- firebase hosting:channel:deploy desktop-preview --expires 30d
+
+Deploy result (2026-09-20 15:14 ADT)
+------------------------------------
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  expires ~2026-10-20 15:13 ADT
+  serves index-DgWxJm6W.js / index-BLP8avTE.css
+  (newer than Ca0Dr8bx; bundle contains Waiting for host to tap Connect voice,
+   Voice session dead — tap Connect voice again, needs Connect)
+- Live UNTOUCHED: https://supercrib241-baba2.web.app
+  still index-BG_0NujD.js
+
+Exact retest (two humans on preview — hard-refresh BOTH)
+--------------------------------------------------------
+1. Hard-refresh BOTH devices on preview (Network must show index-DgWxJm6W.js).
+2. Create/Join room → Both here.
+3. BOTH tap Connect voice (allow mic). Connect pulses until you tap.
+4. Expect ready=[true,true] within ~1–2s, then offer+answer, ice both sides,
+   green Live. Guest must NOT sit forever on peerReady=0.
+5. If host never taps: guest shows “Waiting for host to tap Connect voice”,
+   then Failed ~15s — not infinite CONNECTING.
+6. If host session truly dead: host Failed
+   “Voice session dead — tap Connect voice again” (ready cleared).
+7. Play → cut → deal → table keeps Live (session hold).
+8. Live site: no Connect voice; live bundle unchanged.

@@ -1,0 +1,40 @@
+Cloud-primary save fix (Master Yoda wipe) — 2026-09-16 ~19:42 AT
+
+Root cause (remaining after earlier DEPLOY_PROFILE_RESET_ZF_OWNER):
+1) hydrateAccountFromCloud treated fetchCloudProfile() null (READ FAILURE) the same as
+   "no cloud profile", then pushCloudProfile(local) — empty/guest local wiped RTDB.
+2) localStorage was a single key (supercrib.profile.v1) shared by Guest / Dummy / Owner;
+   newer Dummy/guest updatedAt could still beat Master Yoda on avatar/settings when both
+   were non-default.
+3) pickMergedSettings passed localNewer instead of "base is newer" (sound followed local
+   even when cloud was newer).
+
+Fixes:
+- fetchCloudProfileStatus: ok | error | missing — NEVER push on error
+- shouldDemoteLocalCache / isProfileShell: demote guest/other-playerCode/shell local
+- Per-uid local mirror: supercrib.profile.v1.uid.{uid} (+ legacy mirror)
+- saveProfile(profile, uid) from hydrate / account save / coin+gift inbox
+- pickMergedSettings(..., true) when preferred is already the newer side
+
+Files:
+  src/profile/cloudSync.ts
+  src/profile/storage.ts
+  src/profile/coinInbox.ts
+  src/profile/avatarGiftInbox.ts
+  src/profile/__tests__/cloudSync.test.ts
+
+Build: npm run build OK (dist/assets/index-B9QT7Mpz.js)
+Tests: 56 profile-related passed
+Firebase on box: NOT logged in — do NOT firebase deploy from box
+
+Verify (Josh):
+1) Sign in as Master Yoda (j0shwa@hotmail.com Google)
+2) Confirm name / Zero Forge / rail / coins / unlocks restored from RTDB
+3) Hard refresh — still Master Yoda (not Player)
+4) Optional: sign in Dummy on same browser — Dummy keeps own cache; switch back to
+   Master Yoda — Owner skins intact
+5) DevTools → Application → Local Storage → expect supercrib.profile.v1.uid.* keys
+
+If cloud was already wiped earlier, this cannot resurrect lost RTDB data — restore from
+backup or re-grant unlocks. Console: "cloud read failed — using local cache only, skip push"
+means protect-path worked (no wipe).

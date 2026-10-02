@@ -1,0 +1,103 @@
+Host answers backup offer (seat0 ← from=1) + fail-closed ready — desktop-preview ONLY
+Date: 2026-09-20 ~14:46 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Project: supercrib241-baba2
+
+Ask
+---
+Parent live RTDB (room A6BDG) after backup-offer deploy:
+  ready=[true,true]
+  offer PRESENT from=1  (diag[1]=backup-offer-ok)
+  answer ABSENT
+  ice/1 has candidates; ice/0 EMPTY
+  talking=[null, false]
+Backup offerer WORKS. Failure: seat 0 never answers (never publishes ICE).
+Seat 0 can write ready=true while PC/answer path is dead (talking[0]=null).
+Josh’s earlier “Host didn't send offer” was pre-backup; current data shows
+offer exists from guest and host ignores it.
+Preview only. Live untouched.
+
+Why host skipped answer (code-level)
+------------------------------------
+1) Answer path was gated on !isInitialOffererSeat in kickNegotiate /
+   ensureLobbyOffer / bothReady. Seat 0 only ran maybeNegotiate (offer).
+   When seat1 backup-offered, seat0’s offer listener *could* call onRemoteOffer,
+   but seat0 never started answer-retry / force-answer — so any early skip
+   (no-pc, glare, signalingState defer) left answer=0 forever with no recovery.
+2) Fail-closed ready was incomplete: shouldPublishVoiceReady only checked
+   hasActiveSession (truthy ref). Session heartbeat + Join poll could keep
+   ready[0]=true without PC / signaling → bothReady lie while ice/0 empty
+   and talking[0]=null (A6BDG).
+3) Glare: impolite seat0 could ignore remote if have-local-offer even when
+   it never published offer to RTDB.
+4) onRemoteOffer early-return on !pc / disposed wrote no diag/{0}.
+
+Hard fix
+--------
+1) Seat 0 answers offer.from===1:
+   - ensureAnswerRemoteOffer() on kickNegotiate / ensureLobbyOffer / bothReady
+   - offer listener: diag answer-seen:from=N + startAnswerRetryLoop + scheduleForceAnswer
+   - shouldAnswerRemoteOffer(0,1) already true; now actually exercised
+2) Force answer within ANSWER_FORCE_MS (1s) + retry loop; diag answer-start /
+   answer-force / answer-ok / answer-skip:no-pc / createAnswer:…; UI
+   “Answer failed: …” / “Answering…”
+3) Fail-closed ready: shouldPublishVoiceReady requires hasActiveSession +
+   hasPc + signalingBound. Heartbeat / announceReady / Join poll skip or
+   clear ready=false + Failed “Voice session dead — Connect again”.
+4) Glare: if never published offer to RTDB, rollback and answer remote.
+5) Play gate: code comment only (soft hint already; peer voice-ready needed).
+6) Lobby→table session hold unchanged. No PTT. Live hosting untouched.
+
+Files
+-----
+- src/multiplayer/voicePtt.ts
+- src/multiplayer/useSideLiveChat.ts
+- src/ui/OnlineLobby.tsx (Play gate comment)
+- src/multiplayer/__tests__/voicePtt.test.ts
+- src/multiplayer/__tests__/sideLiveChatUi.test.ts
+- DEPLOY_HOST_ANSWER_BACKUP_OFFER.txt (this note)
+
+Unchanged
+---------
+- VOICE_PTT_ENABLED = false
+- SIDE_LIVE_CHAT hostname gate (preview/localhost only; live OFF)
+- Lobby→table session hold (no mid-table Join maze)
+- Live hosting NOT deployed
+
+Tests / build
+-------------
+- vitest voicePtt + lobbyVoice + sideLiveChatUi — 54 passed
+- tsc --noEmit — passed
+- npm run build — passed (index-Ca0Dr8bx.js / index-DfIg-i_g.css)
+
+Deploy
+------
+- firebase hosting:channel:deploy desktop-preview --expires 30d
+
+Deploy result (2026-09-20 14:46 ADT)
+------------------------------------
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  expires ~2026-10-20 14:45 ADT
+  serves index-Ca0Dr8bx.js / index-DfIg-i_g.css
+  (bundle contains answer-force, answer-start, Voice session dead,
+   answer-seen, answer-ok)
+- Live UNTOUCHED: https://supercrib241-baba2.web.app
+  still index-BG_0NujD.js / index-QmjC4Aj0.css
+
+Exact retest (two humans on preview — hard-refresh BOTH)
+--------------------------------------------------------
+1. Hard-refresh BOTH devices on preview (Network must show index-Ca0Dr8bx.js).
+2. Create/Join room → Both here.
+3. BOTH tap Connect voice (allow mic) in lobby.
+4. Expect within ~2–4s:
+   - offer present (from=0 happy path, OR from=1 backup if host lagged)
+   - answer present (other seat)
+   - ice/0 AND ice/1 have candidates
+   - both badges → green Live
+   - diag may briefly show answer-seen / answer-ok (or backup-offer-ok)
+5. If host was the silent offerer: seat1 backup → seat0 must write answer
+   (diag/0 answer-start → answer-ok; not answer ABSENT).
+6. Dead session: Joined without PC → ready cleared, Failed
+   “Voice session dead — Connect again” (ready heartbeat skipped).
+7. Play → cut → deal → table keeps Live (session hold).
+8. Live site: no Connect voice control; live bundle unchanged.

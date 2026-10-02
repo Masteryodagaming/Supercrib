@@ -1,0 +1,37 @@
+Store — Zero Forge loadables (200 SC) + C&J Dumpster board (500 SC)
+Date: 2026-09-17 ~16:39 ADT (America/Halifax)
+Tree: /workspace/supercrib (live)
+NO firebase deploy from executor — preview-first.
+Tar: /workspace/supercrib-dist.tar.gz (flat tar of dist/)
+
+WHAT
+User: “Add Zf loadables to their correct spot for 200sc and add c and j
+board for 500sc.”
+
+STORE CATALOG (src/profile/coins.ts SUPER_COIN_SHOP)
+1. board_zero_forge — kind board, unlockId zero_forge, label Zero Forge,
+   200 SC, image /boards/zero-forge.jpg?v=3
+2. felt_zero_forge — kind felt, unlockId zero_forge, label Zero Forge,
+   200 SC, image /felts/zero-forge-thumb.jpg?v=8
+3. board_cj_dumpster — kind board, unlockId cj_dumpster, label C&J Dumpster,
+   500 SC, image /boards/cj-dumpster.jpg?v=12
+4. felt_cj_dumpster — unchanged at 1000 SC
+STORE_BOARD_ITEMS / STORE_FELT_ITEMS filter by kind — new rows appear
+automatically. Board/Felt shelves stay open; Avatars/Emoji stay locked teasers.
+
+UNLOCK
+- buyShopItemOnProfile grants unlockId onto ownedBoardIds / ownedFeltIds
+  (grantBoardIdOnProfile / grantFeltIdOnProfile helpers still for gifts).
+- effectiveOwnedBoardIds / effectiveOwnedFeltIds keep purchased zero_forge
+  / cj_dumpster for anyone (Dummy/Owner auto still OK; never strip store-bought
+  Dumpster board for non-Dummy).
+
+TESTS
+- coins.test.ts: expect board ZF + Dumpster board present; felt ZF present;
+  prices 200/500/200; buy grants ownership.
+- npm test coins/boards/felts — 44 passed; npm run build OK.
+
+SUCCESS
+- Store BOARD: Zero Forge 200 + C&J Dumpster 500
+- Store FELT: Zero Forge 200 + C&J Dumpster 1000
+- Buy works; tar ready for preview. No firebase.

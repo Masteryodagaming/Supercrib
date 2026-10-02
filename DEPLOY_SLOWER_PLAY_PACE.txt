@@ -1,0 +1,83 @@
+Slower play pace (readable phases) — 2026-09-19 ~19:35 ADT
+
+Ask
+---
+Josh: screen switches and play feel too quick — slow phase/banner/AI moves
+so they are easier to follow. Phone + desktop. desktop-preview ONLY.
+
+Approach
+--------
+Shared UI timings in src/ui/playPace.ts (~1.5–1.6× prior). Engine GO/31
+pause is PEG_BANNER_MS in src/engine/supercrib.ts. CSS animation durations
+matched to the new holds. No live deploy.
+
+Timings changed (old → new)
+---------------------------
+JS / shared (playPace.ts + engine)
+  PEG_BANNER_MS (GO/31)           1500 → 2400
+  AI_THINK_MS (discard/peg/claim)  480 → 750
+  AI_CUT_ANIM_MS                  2300 → 3600
+  AI_CUT_SELECT_MS                 550 → 850
+  AI_CUT_REVEAL_MS                1200 → 1900
+  DEAL_STEP_MS                      52 → 80
+  CRIB_GATHER_MS                   620 → 980
+  PEG_FLASH_MS                    2500 → 3800
+  MSG_BANNER_DEAL_MS              1600 → 2500
+  MSG_BANNER_YOUR_TURN_MS         2800 → 4200
+  MSG_BANNER_OTHER_MS             2000 → 3100
+  CUT_DEAL_AI_SELECT_MS            350 → 550
+  CUT_DEAL_AI_REVEAL_MS           1000 → 1600
+  CUT_DEAL_RESULT_HOLD_MS         1400 → 2200
+  CUT_DEAL_TIE_HOLD_MS            1200 → 1900
+  PEG_TRAVEL_MS                    480 → 750
+  CONN_BANNER_COLLAPSE_MS         1600 → 2500
+
+CSS (src/ui/styles.css — timing only; board/card size pass-2 kept)
+  .message.is-collapsed / appear   0.20s/0.15s → 0.35s/0.28s
+  peg-callout-pop                 2.45s → 3.7s
+  peg-banner-pop                  1.5s  → 2.4s
+  deal-fly-in                     0.28s → 0.42s
+  crib-gather + stagger           0.55s/55ms → 0.85s/85ms
+  ai-cut-scan + delay             0.9s/28ms → 1.35s/42ms
+  ai-cut-flip                     0.4s  → 0.6s
+  .overlay appear                 (instant) → overlay-fade-in 0.32s
+
+Competitive claim overlays: no separate timed appear/dismiss (user keypad);
+AI claim/muggins pace follows AI_THINK_MS.
+
+Coordination
+------------
+Re-read styles.css before edit. Desktop board+cards pass-2 clamps kept:
+  @900  --board-w clamp(380px, 42vw, 560px); shell min(1000px, 94vw)
+  @1100 --board-w clamp(420px, 40vw, 620px); shell min(1120px, 92vw)
+Pegboard hole math untouched. Phone shrinks untouched.
+
+Files
+-----
+- src/ui/playPace.ts (new)
+- src/ui/App.tsx, Table.tsx, CutForDeal.tsx, Pegboard.tsx
+- src/engine/supercrib.ts (PEG_BANNER_MS)
+- src/ui/styles.css (animation durations only)
+
+Verify
+------
+1. Hard-refresh desktop-preview (phone + desktop).
+2. Vs AI: deal cards, crib gather, AI think, cut, GO/31 banners, peg flashes
+   feel calmer but not sluggish.
+3. Competitive claim still responsive; AI claim delay ~750ms.
+4. Desktop plank/cards still at pass-2 size (not reverted).
+
+Deploy (hard constraint)
+------------------------
+- npm test + npm run build
+- firebase hosting:channel:deploy desktop-preview ONLY (not live)
+- Preview URL: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+
+Deploy results
+--------------
+- npm test — 45 files / 447 tests passed
+- npm run build — passed (index-C3DiEeAT.css / index-D7mvQUpj.js)
+- firebase hosting:channel:deploy desktop-preview ONLY
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  serves index-C3DiEeAT.css / index-D7mvQUpj.js
+- Live intentionally untouched: still index-DwOlaAp5.css / index-OzRiGnDC.js

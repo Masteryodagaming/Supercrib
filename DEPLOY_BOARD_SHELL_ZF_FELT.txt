@@ -1,0 +1,36 @@
+Desktop board-in-shell + ZF felt letterbox — 2026-09-16 ~22:15 ADT
+
+CSS-only (src/ui/styles.css):
+
+REVERTED:
+  - .app.app-playing full-bleed (max-width/width 100%, border-radius 0, box-shadow none)
+  - Restored framed phone shell:
+      @900:  max-width min(720px, 94vw)
+      @1100: max-width min(820px, 90vw)
+  - Home/menus stay 680 / 780
+
+BOARD SCALE (plank toward ZF/felt green side rails; hole math untouched):
+  - @900:  --board-w: clamp(320px, 86%, 500px)  (was clamp(260px, 30vw, 400px))
+  - @1100: --board-w: clamp(360px, 88%, 580px)  (was clamp(300px, 28vw, 460px))
+
+ZF FELT (desktop, felt-only — board paint / maple / Dumpster plank untouched):
+  - @900+: background-size: auto 100%; background-position: center top; #050505 letterbox
+  - Overlay cards: background-size auto, contain (solid #0a0a0c letterbox)
+
+Dumpster plank ellipse radial + cj-dumpster.jpg?v=9: unchanged.
+
+Deploy:
+  firebase deploy --only hosting --project supercrib241-baba2
+  firebase hosting:channel:deploy desktop-preview --project supercrib241-baba2
+
+Josh verify:
+  1) Hard-refresh desktop-preview
+  2) Vs AI in-match — phone column framed (NOT full browser width); green letterbox outside shell OK
+  3) Equip ZF or Dumpster board — plank fills more of felt column toward green side rails
+  4) Equip ZF felt — desktop felt height-fits with #050505 side letterbox; overlays contain/solid
+  5) Dumpster plank still shows neon paint + ellipse cover over finish hole
+
+URLs:
+  Live: https://supercrib241-baba2.web.app
+  Channel: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  Console: https://console.firebase.google.com/project/supercrib241-baba2/overview

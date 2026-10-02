@@ -1,0 +1,7 @@
+Zero Forge felt removal — 2026-09-16 ADT
+
+- Removed the Zero Forge felt from the selectable FELT_THEMES list.
+- Legacy zero_forge felt settings normalize to the default felt.
+- Zero Forge felt is no longer auto-added to Dummy or Owner effective ownership.
+- Zero Forge BOARD behavior and all Dumpster board/felt behavior are unchanged.
+- Build and flat tar were produced locally; Firebase deploy was intentionally not run.

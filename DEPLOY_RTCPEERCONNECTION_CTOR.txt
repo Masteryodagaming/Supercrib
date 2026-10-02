@@ -1,0 +1,69 @@
+RTCPeerConnection is not a constructor (Josh PC Connect voice) — desktop-preview ONLY
+Date: 2026-09-21 ~21:39 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Project: supercrib241-baba2
+Room: WWBHU (report)
+
+Ask
+---
+Josh (Chrome desktop Windows host): red text under Connect voice —
+  Voice failed to start: RTCPeerConnection is not a constructor
+Phone Connect works. Preview only. Live untouched. Keep VAD, lobby hold, race fixes.
+
+Root cause
+----------
+Only construction site was voicePtt VoicePttSession.start():
+  const pc = new RTCPeerConnection({ iceServers: [...VOICE_STUN_SERVERS] });
+Free global — no shadowed local, no wrong import, no vitest mock in the app
+bundle (dist had a single bare `new RTCPeerConnection`). Chrome reports
+"RTCPeerConnection is not a constructor" when that binding resolves to a
+non-function (typically undefined): WebRTC disabled / enterprise policy /
+flags / extension overwrite on the PC browser. Phone still exposes a working
+ctor, so the same preview JS succeeds there. Bare `new` gives a cryptic TypeError
+instead of a clear "WebRTC missing" message.
+
+Fix
+---
+1) resolveRTCPeerConnectionCtor() — read
+   globalThis.RTCPeerConnection ?? window.RTCPeerConnection ?? webkit…
+   and require typeof === 'function'; throw RTCPEERCONNECTION_MISSING_MSG if not.
+2) start() uses `const PeerConnection = resolveRTCPeerConnectionCtor();
+   const pc = new PeerConnection(...)` — never shadow the global with a
+   same-named non-ctor value.
+3) Unit tests: happy path, window fallback, missing → clear error, object
+   shadow rejected.
+4) VAD / lobby hold / prior race fixes untouched.
+
+Files
+-----
+- src/multiplayer/voicePtt.ts
+- src/multiplayer/__tests__/voicePtt.test.ts
+- DEPLOY_RTCPEERCONNECTION_CTOR.txt (this note)
+
+Tests / build
+-------------
+- vitest voicePtt + lobbyVoice + sideLiveChatUi + voiceVad + voiceConfig — 86 passed
+- tsc --noEmit + vite build — passed (index-BpiBPyKr.js / index-BLP8avTE.css)
+
+Deploy
+------
+- firebase hosting:channel:deploy desktop-preview --expires 30d
+
+Deploy result (2026-09-21 21:39 ADT)
+------------------------------------
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  expires ~2026-10-21 21:39 ADT
+  serves index-BpiBPyKr.js / index-BLP8avTE.css
+- Live UNTOUCHED: https://supercrib241-baba2.web.app
+  (still index-BG_0NujD.js / index-QmjC4Aj0.css)
+
+Exact retest (Josh host PC — hard-refresh preview)
+--------------------------------------------------
+1. Hard-refresh preview (Network must show index-BpiBPyKr.js).
+2. Room WWBHU (or new room); tap Connect voice (allow mic).
+3. Expect: PC constructs; progress past "is not a constructor" (readyMe=1 /
+   Connecting → Live with phone).
+4. If WebRTC is truly disabled on that Chrome: Failed shows the clear
+   "RTCPeerConnection unavailable — WebRTC missing…" message (not "is not a
+   constructor"). Check chrome://webrtc-internals / flags / enterprise policy.
+5. Live site unchanged.

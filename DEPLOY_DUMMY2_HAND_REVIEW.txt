@@ -1,0 +1,60 @@
+Dummy2 hand review (Approve/Adjust) + claim→hand copy — 2026-09-19 ~22:35 ADT
+
+Asks
+----
+1. After Josh counts his hand vs Dummy2, UI said "reviewing claim" and never
+   showed Approve/Adjust for Dummy2.
+2. Change user-facing "claim" wording in that review step to "hand".
+Preview only. Do not promote to live. Left gameSfx.ts / public/sfx alone.
+VOICE_PTT_ENABLED stays false. No felt stretch / desktop shell warp.
+
+Root cause
+----------
+submitShowClaim correctly set pendingReview, but:
+- ShowOverlay only rendered Confirm/Adjust when reviewSeat === viewer (seat 0).
+  When Josh claimed, Dummy2 (seat 1) was reviewer → only "Opponent reviewing
+  claim…" with no buttons.
+- aiShouldAct + advanceCompetitiveAi auto-Confirmed after ~750ms, so the
+  review step vanished before Josh could act for Dummy2.
+
+Fix
+---
+1. vs-AI: human always sees Approve/Adjust on pendingReview (Dummy2 review
+   hotseat). Banner: "{Dummy2} reviewing hand (N) — Approve or Adjust".
+2. AI no longer auto-acts on pendingReview (aiShouldAct false;
+   advanceCompetitiveAi no-ops reviews). Human must Approve or Adjust.
+3. Copy in review / count-approval UI: claim → hand
+   - "Approve hand (N)" / "Adjust hand"
+   - "Opponent reviewing hand…" (online wait line)
+   - "Hand total N — Approve or Adjust"
+   - ClaimPad "Confirm hand (N)"; engine message "Hand counted N — …"
+4. Online seat gating unchanged (only reviewSeat === viewer gets buttons).
+
+How to test on preview
+----------------------
+1. Hard-refresh desktop-preview.
+2. Dummy → Competitive vs AI. Count your hand → Confirm hand.
+3. Expect Dummy2 review panel with Approve hand / Adjust hand (stays until
+   you click — AI does not skip it).
+4. Adjust hand still replaces count; underclaim still Accept|Muggins after.
+5. Online Competitive: opponent still seat-gated Approve/Adjust; wait copy
+   says "reviewing hand".
+
+Deploy (hard constraint)
+------------------------
+- npm test — 54 files / 493 tests passed
+- npm run build — passed (index-BKYHyC_M.css / index-BEL1vAT0.js)
+- firebase hosting:channel:deploy desktop-preview ONLY (not live)
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (channel expires ~2026-10-19 22:34 ADT)
+- Live untouched (not promoted)
+- gameSfx.ts / public/sfx not modified this pass
+- VOICE_PTT_ENABLED left false
+
+Key files
+---------
+- src/engine/ai.ts (no auto-review)
+- src/engine/supercrib.ts (advanceCompetitiveAi + hand message)
+- src/engine/__tests__/competitiveScoring.test.ts
+- src/ui/ShowOverlay.tsx, Rules.tsx
+- DEPLOY_DUMMY2_HAND_REVIEW.txt (this note)

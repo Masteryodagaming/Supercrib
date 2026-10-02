@@ -1,0 +1,64 @@
+Competitive online (host pick / guest inherit) — 2026-09-19 ~21:40 ADT
+
+Feature
+-------
+- Play online flow now shows the same Scoring mode chooser as AI:
+  Normal (auto count) / Competitive (count your own & Muggins).
+- Host picks at Find Match → Play online → Scoring mode (default Normal).
+- Guest does not choose — inherits room.scoringMode from the host’s room.
+- createGame('online', { scoringMode }) on host deal; both seats sync via
+  existing game serialize (scoringMode + competitiveShow).
+- Claim / Muggins / overclaim steal×2 work over multiplayer (same engine path
+  as AI). Seat-gated: only the claimant / muggins respondent may push.
+- Fixed competitiveShow.log deserialize for Firebase object-form arrays so
+  claim logs survive RTDB round-trip.
+- Gate: Competitive chooser available for any online host on preview
+  (canOfferCompetitiveOnline). AI Competitive remains Dummy-gated.
+- Do not force Competitive; default Normal / auto.
+- Tournaments createRoom still defaults auto (no chooser forced).
+- VOICE_PTT_ENABLED left false (voice stays off; don’t fight SFX work).
+
+Host / guest pick + sync
+------------------------
+1. Host: Find Match → Play online → Scoring mode → Normal or Competitive →
+   Create room. Room record stores scoringMode; lobby shows the mode label.
+2. Guest: Join room (code/link). Sees host’s Scoring: Normal/Competitive in
+   waiting lobby. No chooser.
+3. Host Play → cut → skins → host deal writes GameState with scoringMode.
+4. Guest mirrors via subscribe; show claims / muggins push with rev check;
+   both clients share the same competitiveShow state.
+
+How to test on preview
+----------------------
+1. Open desktop-preview (hard-refresh) on two browsers/profiles.
+2. Host: Find Match → Play online → Competitive → Create room → share code.
+3. Guest joins; waiting screen shows Competitive.
+4. Play through to show: claim raw, underclaim → Muggins, overclaim steal×2.
+5. Repeat with Normal to confirm default auto-count still works.
+
+Deploy (hard constraint)
+------------------------
+- npm test — 51 files / 479 tests passed
+- npm run build — passed
+- Deployed desktop-preview ONLY (firebase hosting:channel:deploy desktop-preview /
+  project supercrib241-baba2). Live intentionally NOT promoted.
+- Preview URL:
+  https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (channel expires ~2026-10-19 21:40 ADT)
+- Live NOT promoted.
+
+Key files
+---------
+- src/ui/Home.tsx (onlineScoring chooser)
+- src/ui/OnlineLobby.tsx (show room scoring mode)
+- src/ui/App.tsx (beginOnline mode, createRoom + deal wiring, claim seat gate)
+- src/ui/Rules.tsx
+- src/multiplayer/types.ts (RoomRecord.scoringMode)
+- src/multiplayer/roomSession.ts (createRoom + roomScoringMode)
+- src/multiplayer/useRoomSession.ts
+- src/multiplayer/serialize.ts (competitiveShow.log via asList)
+- src/engine/competitiveScoring.ts (normalizeScoringMode, canOfferCompetitiveOnline)
+- src/engine/__tests__/competitiveScoring.test.ts
+- src/multiplayer/__tests__/serialize.test.ts
+- src/multiplayer/__tests__/roomScoringMode.test.ts
+- src/multiplayer/voiceConfig.ts (VOICE_PTT_ENABLED = false, unchanged)

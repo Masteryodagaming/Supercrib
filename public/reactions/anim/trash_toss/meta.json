@@ -1,0 +1,17 @@
+{
+  "id": "trash_toss",
+  "durationMs": 1710,
+  "frames": [
+    "f1.png",
+    "f2.png",
+    "f3.png",
+    "f4.png"
+  ],
+  "frameDurationsMs": [
+    180,
+    280,
+    500,
+    750
+  ],
+  "note": "crouch → mid → peak throw → follow-through settle (end on f4); slowed ~1.4× for clearer read"
+}

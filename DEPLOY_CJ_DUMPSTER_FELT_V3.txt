@@ -1,0 +1,13 @@
+C&J Dumpster Felt V3 deploy notes
+
+Completed: 2026-09-16 20:13 ADT
+
+- Verified source felt assets: public/felts/cj-dumpster.jpg is 784x1168; cj-dumpster-thumb.jpg is 200x298.
+- Bumped C&J felt imageSrc/thumbSrc and felt CSS background URLs from ?v=2 to ?v=3.
+- Paint-only pass: no Pegboard hole math, board CSS, layout, or emoji CSS changes made.
+- Changed source files: src/profile/felts.ts and src/ui/styles.css.
+- Test: npm test -- src/profile/__tests__/felts.test.ts (7 passed).
+- Build: npm run build (succeeded; Vite warnings only).
+- Flat deploy tarball: /workspace/supercrib-dist.tar.gz
+- Tarball contains ./felts/cj-dumpster.jpg and ./felts/cj-dumpster-thumb.jpg.
+- Firebase deploy intentionally not run from the box.

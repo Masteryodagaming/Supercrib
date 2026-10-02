@@ -1,0 +1,46 @@
+Arena hockey pegboard — Store + Yoda gift + board preview
+Date: 2026-09-17 ~22:33 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Tar: /workspace/supercrib-dist.tar.gz (flat tar of dist/)
+
+ART (paint-only; Pegboard hole math untouched)
+- Source: agent attachment hockey rink (1168×1696)
+- Face-crop to plank ~280:400 → 1168×1669 (full res — NOT downscaled to 896×1280)
+- public/boards/arena.jpg        1168×1669  ~692 KB  (?v=1)
+- public/boards/arena-thumb.jpg   358×512   ~79 KB   (?v=1)
+- CSS: .app.board-arena .board-wood-plank → center / 100% 100% no-repeat
+- Hide SVG maple/path/decade labels + finish group; keep hole-dots/pegs
+
+REGISTER
+- boards.ts: id arena, label Arena, blurb "Hockey rink pegboard",
+  thumbClass owned-board-swatch-arena; unlock via ownedBoardIds only (no Dummy auto)
+- App applies board-${id} → app.board-arena (same as ZF/Dumpster)
+- Settings Owned Boards lists Arena when owned
+
+STORE (src/profile/coins.ts)
+- board_arena — kind board — glyph 🏒 — price 500 SC
+  imageSrc /boards/arena-thumb.jpg?v=1 — unlockId arena
+- buyShopItemOnProfile grants arena onto ownedBoardIds (same as cj_dumpster)
+- ZF + Dumpster board rows unchanged
+
+PREVIEW (src/ui/Store.tsx)
+- BOARD shelf: art + name open lightbox of full play plank
+  (zero_forge → /boards/zero-forge.jpg?v=3,
+   cj_dumpster → /boards/cj-dumpster.jpg?v=17,
+   arena → /boards/arena.jpg?v=1)
+- Buy stays separate; Escape / backdrop closes
+- Felt shelf unchanged (boards required)
+
+YODA GIFT (uid CphdDQWSDQbCf58rAMpo78wtFFm2)
+- ownedBoardIds after merge: ["default","cj_dumpster","arena"]
+- settings.board left as zero_forge (NOT auto-equipped)
+- avatarGift push: board:arena / "Arena Board" / fromName Zero Forge Labs
+  pushId -P1m87kymD3NGuROvbhd  at 1789695132657
+- Joseph Francis NOT gifted
+
+DEPLOY
+- Live: https://supercrib241-baba2.web.app
+- desktop-preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (expires 2026-10-17 ~22:06 ADT)
+
+TESTS: boards.test.ts 10 + coins.test.ts 28 = 38 passed; npm run build OK

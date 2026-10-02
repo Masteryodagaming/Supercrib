@@ -1,0 +1,53 @@
+Zero Forge felt — new art + re-enable (Dumpster menu-lock parity)
+Date: 2026-09-17 ~15:17 ADT (America/Halifax)
+Tree: /workspace/supercrib (live)
+NO firebase deploy from executor.
+
+WHAT
+User attached new Zero Forge felt art; re-enable ZF felt for Dummy + Owner
+and apply the same menu-lock CSS vars pattern already used by C&J Dumpster.
+
+SOURCE
+attachments/.../25ec326f8b4e87fbdafaaeb3826212ff2617246fbfb30bfcfc85a5ffab65acba.jpeg
+1152×1712 RGB → uniform LANCZOS cover-scale + center-crop → 784×1168
+(no stretch-warp). Thumb: 200×200 cover crop.
+
+ASSETS
+- public/felts/zero-forge.jpg (new, ?v=8)
+- public/felts/zero-forge-thumb.jpg (new, ?v=8)
+- Backups: zero-forge.jpg.bak-pre-new-art, zero-forge-thumb.jpg.bak-pre-new-art
+
+FELT REGISTER (src/profile/felts.ts)
+- Zero Forge back in FELT_THEMES (label “Zero Forge”, ice/forge blurb)
+- imageSrc/thumbSrc /felts/zero-forge.jpg?v=8 + thumb
+- normalizeFeltId only remaps zero_forge → default if missing from themes
+- canUseZeroForgeFelt → Dummy + Owner; added in effectiveOwnedFeltIds
+- cj_dumpster Dummy auto / ownedFeltIds gift path unchanged
+
+CSS (src/ui/styles.css) — Dumpster parity
+- .app.felt-zero_forge (+ .app-playing twin):
+  --felt-pin-image: url('/felts/zero-forge.jpg?v=8')
+  --felt-pin-size: 100% auto  (width-fill; keep ZERO / FORGE side rails)
+  --felt-pin-color: #050505
+  --felt-pin-position: center center
+- Overlay cards: gradient + felt image (Dumpster-style), ice border tint
+- Shared [class*="felt-"]:not(.app-playing) pin inherits — no Dumpster-only
+  pin block duplicated
+- Desktop letterbox / min-width media blocks updated to same art + 100% auto
+- Board paint / holes / .app-playing play logic untouched
+
+TESTS
+- felts.test.ts, matchSkins.test.ts, cloudSync.test.ts updated for re-enable
+- vitest: 43 passed
+
+BUILD / TAR
+- npm run build → OK (css index-DEZG_7Jx.css, js index-D52LeSYi.js)
+- Flat tar: /workspace/supercrib-dist.tar.gz
+- Parent: desktop-preview-first recommended, then MSI hosting deploy
+  (no firebase from box)
+
+SUCCESS CHECKS
+- ZF selectable for Dummy + Owner
+- New art live via --felt-pin-* / ?v=8
+- Menu lock same as Dumpster (stationary pin + room inset + opaque sheets)
+- Tar ready at /workspace/supercrib-dist.tar.gz

@@ -1,0 +1,120 @@
+Desktop pegboard bigger (browser mode) — 2026-09-19 ~16:31 ADT
+
+Ask
+---
+Josh: make boards visually bigger in browser mode. Pegboard looked tiny in a
+wide Chrome window (side-by-side Discord) — narrow phone column + huge gutters.
+Earlier plank/shell oversize + ZF felt stretch was rejected/reverted; do NOT
+warp felt or Dumpster plank paint. Phone layout must stay good. Preview only.
+
+Root cause
+----------
+Tablet / iPad media also matched mouse desktops at 900–1100px width:
+  @media (min-width: 900px) and (hover: none),
+         (min-width: 900px) and (max-width: 1100px) { --board-w: 190–230px }
+Side-by-side Chrome (~960–1100 wide) hit that clause and forced the tiny
+tablet plank instead of the desktop clamps.
+
+CSS changes (src/ui/styles.css ONLY — paint-only; Pegboard hole math untouched)
+-------------------------------------------------------------------------------
+1) Tablet override: touch-only
+   @media (min-width: 900px) and (hover: none)
+   Removed `(min-width: 900px) and (max-width: 1100px)` so mouse desktops keep
+   the framed desktop shell + larger --board-w.
+
+2) Wider framed play shell (still NOT full-bleed; home menus unchanged)
+   @900:  .app.app-playing max-width min(840px, 94vw)  (was 720)
+   @1100: .app.app-playing max-width min(960px, 92vw)  (was 820)
+
+3) Larger aspect-safe --board-w (height still width × 400/280)
+   @900:  clamp(300px, 36vw, 420px)  (was 260/30vw/400)
+   @1100: clamp(340px, 34vw, 500px)  (was 300/28vw/460)
+   Matching .pegboard / .board-side-scores / plank width bindings updated.
+
+4) Short-height safety (@900 + max-height 820): mild bump
+   clamp(200px, 26vh, 280px) (was 170/22vh/220) — still prevents mid-zone clip.
+
+UNTOUCHED (KEEP)
+----------------
+- ZF / Dumpster felt: background-size 100% auto + center (no 100% 100% warp)
+- Dumpster plank ellipse / hole paint
+- Pegboard.tsx hole/path math
+- Phone ≤430–520 shrinks
+- Competitive chooser (Home.tsx + .ai-diff-option column + bracket hints):
+  Normal (auto count) / Competitive (count your own & Muggins) left alone
+
+Verify
+------
+1. Hard-refresh desktop-preview in a wide Chrome window (incl. side-by-side).
+2. Vs AI in-match with ZF felt: pegboard clearly larger; ZERO/FORGE not ovalized.
+3. Dumpster board paint still circular traps (not stretched).
+4. Phone / iPad Safari play layout still phone-sized (hover:none path).
+5. Scoring mode chooser still: title on its line, bracketed desc under mode.
+
+Deploy (hard constraint)
+------------------------
+- npm test — 44 files / 442 tests passed
+- npm run build — passed (index-DxXpAtAJ.css / index-BBu_BanM.js)
+- Verified preview serves new CSS; live still on index-DwOlaAp5.css (untouched)
+- desktop-preview ONLY (firebase hosting:channel:deploy desktop-preview /
+  project supercrib241-baba2). Live intentionally NOT promoted.
+- Preview URL:
+  https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+
+------------------------------------------------------------------------------
+pass 2: bigger + cards — 2026-09-19 ~19:30 ADT
+------------------------------------------------------------------------------
+Ask: plank still too small in side-by-side Chrome (“still can’t see it”); also
+increase card size. Prior clamps (300/36vw/420 @900; 340/34vw/500 @1100) and
+shell 840/960 not enough when vw is small.
+
+CSS (src/ui/styles.css ONLY — paint/layout; Pegboard hole math untouched)
+-------------------------------------------------------------------------
+1) Shell (still framed, not full-bleed)
+   @900:  .app.app-playing max-width min(1000px, 94vw)  (was 840)
+   @1100: .app.app-playing max-width min(1120px, 92vw)  (was 960)
+
+2) --board-w (aspect via width × 400/280)
+   @900:  clamp(380px, 42vw, 560px)  (was 300/36vw/420)
+   @1100: clamp(420px, 40vw, 620px)  (was 340/34vw/500)
+   Short-height (@900 + max-height 820): clamp(220px, 28vh, 300px)
+
+3) Cards ~1.25–1.4× phone on same breakpoints
+   Hand fan, opponent row (+ pegging opp override), play-pile, starter,
+   crib stack, show overlay / fan, cut fan — scaled so ranks stay readable.
+
+4) Cascade bugfix: base `.app.board-cj_dumpster .board-wood-plank { --board-w:216px }`
+   beat desktop `.board-wood-plank { clamp(...) }` (higher specificity).
+   Desktop / tablet / short-height now include Dumpster + ZF (+ arena/gold @desktop)
+   selectors so maple / ZF / Dumpster all get the intended plank size.
+   Tablet (hover:none) still shrinks Dumpster/ZF to the phone-fit clamp.
+
+UNTOUCHED
+---------
+- ZF / Dumpster felt: background-size 100% auto + center (no 100% 100% warp)
+- Board skin paint (center / 100% 100% on plank art — aspect locked by --board-w)
+- Pegboard.tsx hole/path math
+- Phone ≤430–520 shrinks
+- Live hosting (desktop-preview channel only)
+
+Verify
+------
+1. Hard-refresh desktop-preview side-by-side Chrome: plank clearly larger;
+   hand cards clearly larger.
+2. Dumpster + maple + ZF all get big desktop plank (not stuck at 200/216).
+3. ZF/Dumpster felt not ovalized; Dumpster traps stay circular.
+4. Phone / iPad (hover:none) still phone-sized.
+
+Deploy
+------
+- npm test + npm run build
+- firebase hosting:channel:deploy desktop-preview ONLY (not live)
+
+Deploy results (pass 2)
+-----------------------
+- npm test — 45 files / 447 tests passed
+- npm run build — passed (index-DEusFYu1.css / index-BeGtlJrU.js)
+- Verified preview serves new CSS; live still on index-DwOlaAp5.css (untouched)
+- desktop-preview ONLY
+- Preview URL:
+  https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app

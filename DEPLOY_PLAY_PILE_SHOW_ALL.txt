@@ -1,0 +1,70 @@
+Play pile show-all (pegging COUNT cards) — 2026-09-19 ~21:00 ADT
+
+Ask
+---
+Josh: during pegging/count he only sees **3 of the count cards** (play pile).
+Wants to **see them all**, expanding as they’re played. Display only; desktop-preview
+ONLY; leave splash ZF, competitive claim overlay, board size pass-3 intact.
+
+Root cause
+----------
+CSS capped the pegging COUNT box:
+  .table.phase-pegging .mid-play-row .play-area.peg-active {
+    max-width: min(100%, 220px);
+  }
+Desktop pile cards are 56×78 (@900) / 62×86 (@1100) → only **3 cards** fit in 220px;
+4th+ were clipped by mid-zone overflow-x:hidden (not rendered-off — DOM had full
+state.peg.sequence; layout hid them).
+
+Phone (32–36px cards): ~5–6 fit in 220px before clip — also improved by this fix.
+
+Hidden count
+------------
+- Desktop: cards after the **3rd** were hidden (typically 1–N of a long sequence).
+- Engine already stores the full current trail in `peg.sequence` (cleared on 31/Go
+  reset). Table.tsx already mapped the full array — no engine/rules change.
+
+Fix (display only — src/ui/styles.css)
+--------------------------------------
+1) Remove 220px cap → play-area max-width/width 100%, overflow visible.
+2) .play-pile-row during pegging: width 100%, flex-wrap wrap, justify center,
+   overflow visible — expands horizontally then wraps as cards are played.
+3) HAND_HIT_TARGET (hand z14 / mid pointer-events none / crib-starter compact),
+   pass-3 board clamps, splash ZF contain, competitive claim overlay — untouched.
+
+Expansion behavior
+------------------
+- Pile uses full mid-row width under the board (between starter/crib gutters).
+- Cards lay out left→right, wrap to a second row if needed; box grows with the
+  sequence until 31/Go clears peg.sequence.
+- Hand stays below (pegging hand transform:none + z-index 14); no peg rules change.
+
+Files
+-----
+- src/ui/styles.css
+- src/ui/__tests__/playPileShowAll.css.test.ts (new)
+- DEPLOY_PLAY_PILE_SHOW_ALL.txt (this note)
+
+Verify
+------
+1. Hard-refresh desktop-preview in Chrome.
+2. Vs AI → pegging: play 4+ cards into the count — all pile cards visible; row
+   grows/wraps; hand still clickable; crib/starter still compact.
+3. Phone/narrow: no 220px clip; full sequence visible.
+4. Competitive claim overlay + pass-3 board size + splash ZF still OK.
+
+Deploy (hard constraint)
+------------------------
+- npm test — 49 files / 467 tests passed
+- npm run build — passed (index-DbarBvAb.css / index-APP0OtP_.js)
+- firebase hosting:channel:deploy desktop-preview ONLY (not live)
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+
+Deploy results
+--------------
+- npm test — 49 files / 467 tests passed
+- npm run build — passed (index-DbarBvAb.css / index-APP0OtP_.js)
+- desktop-preview channel deployed 2026-09-19 ~21:00 ADT
+- Preview serves index-DbarBvAb.css / index-APP0OtP_.js (no 220px cap)
+- Live untouched: still index-DwOlaAp5.css / index-OzRiGnDC.js
+- Preview URL: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app

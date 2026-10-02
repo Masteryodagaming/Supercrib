@@ -1,0 +1,76 @@
+Host Connect voice start fail (ready never sticks) — desktop-preview ONLY
+Date: 2026-09-20 ~22:06 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Project: supercrib241-baba2
+
+Ask
+---
+Josh (Windows Chrome host): tap Connect voice → brief Failed / "Voice failed to
+start" (often no debug line) → UI returns to Connect voice. Phone guest Connect
+works. RTDB host ready stays null/false. Preview only. Live untouched.
+
+Root cause
+----------
+1) onStatus('error'|'denied') dropped joined whenever !debugSnapshot.readyMe.
+   readyMe only flipped true from the RTDB onValue listener AFTER announceReady's
+   set() resolved — so any concurrent offer/answer/error (common when guest is
+   already Connected) saw readyMe=0 and tore down the session before ready stuck.
+2) start() early-returned forever on a half-started held session (started=true,
+   pc=null) after a throw — Connect retry was a silent no-op.
+3) onRemoteOffer with !pc called failClosedDeadSession — raced PC bind when a
+   leftover guest offer was already in RTDB.
+4) Catch showed a generic "Voice failed to start" with no exception text; debug
+   line was gated on joined, so Failed often showed no debug after the drop.
+
+Fix
+---
+1) Drop joined on session error only when !canPublishReady() (PC/signaling dead),
+   not merely !readyMe (RTDB listener lag).
+2) announceReady sets localReadyFlag=true optimistically after a successful write.
+3) start() recovers partial starts; try/catch clears PC so retry can start again.
+   Reused held session with no PC calls start() instead of announceReady-only.
+4) onRemoteOffer !pc: stash pending offer + diag, do NOT failClosed.
+5) Held zombie recreate helper (started && !canPublishReady).
+6) formatVoiceStartFailure surfaces real Error.message; debug stays visible with
+   inline error even after joined drops (lobby button + OnlineLobby).
+
+Files
+-----
+- src/multiplayer/useSideLiveChat.ts
+- src/multiplayer/voicePtt.ts
+- src/multiplayer/lobbyVoice.ts
+- src/ui/SideLiveChatButton.tsx
+- src/ui/OnlineLobby.tsx
+- src/multiplayer/__tests__/sideLiveChatUi.test.ts
+- src/multiplayer/__tests__/lobbyVoice.test.ts
+- DEPLOY_HOST_CONNECT_START_FAIL.txt (this note)
+
+Tests / build
+-------------
+- vitest sideLiveChatUi + lobbyVoice + voicePtt — 71 passed
+- tsc --noEmit — passed
+- npm run build — passed (index-BUqlNlda.js / index-BLP8avTE.css)
+
+Deploy
+------
+- firebase hosting:channel:deploy desktop-preview --expires 30d
+
+Deploy result (2026-09-20 22:06 ADT)
+------------------------------------
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  expires ~2026-10-20 22:06 ADT
+  serves index-BUqlNlda.js / index-BLP8avTE.css
+- Live UNTOUCHED: https://supercrib241-baba2.web.app
+
+Exact retest (Josh host PC — hard-refresh preview)
+--------------------------------------------------
+1. Hard-refresh host PC on preview (Network must show index-BUqlNlda.js).
+2. Create/join room; guest phone already Connected voice (or both land Both here).
+3. Host tap Connect voice (allow mic). Expect:
+   - ready/{0}=true sticks within ~1–2s (not null/false)
+   - debug line shows readyMe=1 micAttached=1 (visible even if a transient error
+     toast appears)
+   - then link / Live once peer ready
+4. If something still fails: Failed must show the REAL error text + debug line
+   (not a blank Failed). Copy debug for the next pass.
+5. Live site unchanged (no Connect voice / old bundle).

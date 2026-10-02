@@ -1,0 +1,114 @@
+Side live chat — answerer role + ready-without-session — desktop-preview ONLY
+Date: 2026-09-20 ~13:15 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Project: supercrib241-baba2
+
+Ask
+---
+Josh 1:04 PM STILL rtdbAnswer=0 after wipe-race fix (index-ChIFB4lw). Host seat=0:
+  readyMe=1 peerReady=1 bothReady=1 micAttached=1
+  offer=1 answer=0 seenOffer=1 wroteAnswer=0 rtdbAnswer=0
+  ice=new conn=new seat=0
+Badge FAILED. rtdbAnswer=0 = guest never successfully writes voice/answer.
+Wipe-race fix necessary but insufficient. Preview only. Live untouched.
+
+RTDB evidence (room MT22J, seats lastSeen ~13:04 ADT; offer republish ~13:12 ADT)
+---------------------------------------------------------------------
+  seats[0]=Dummy2 connected  seats[1]=Dummy connected
+  voice.ready  = [true, true]
+  voice.offer  = PRESENT (from=0, at ~13:12 ADT, sdpLen=1426, sendrecv)
+  voice.answer = ABSENT
+  voice.ice    = ONLY seat 0 (2 cands); ice/1 ABSENT
+  renegotiate / diag / lastError = ABSENT
+Ready lied: bothReady with NO guest PC activity (no ice/1, no answer).
+
+Root causes (code-level)
+------------------------
+1) Hypothesis B CONFIRMED in code: onRemoteOffer hard-required `this.seat !== 1`
+   return. Answering was coupled to seat id, not offer.from. Inverted seats /
+   glare / both-think-0 paths could never createAnswer.
+   Answer write also hard-coded buildSdpPayload(..., 1).
+
+2) Hypothesis A CONFIRMED: useSideLiveChat published ready/{seat} on Join +
+   every 2s while Joined EVEN WITH sessionRef=null (disposed / remount gap).
+   Session heartbeat + Join publish → ready=[true,true] with nobody able to
+   answer → host offers, fails link-watchdog, rtdbAnswer=0 forever.
+
+3) Hypothesis C: createAnswer/setLocalDescription failures had no RTDB surface
+   (host could not see guest Safari errors). Now voice/diag/{seat} + debugLine
+   diag=/lastErr=.
+
+4) Hypothesis D mitigated: bindSignaling already before announceReady; answer
+   role + fail-closed ready remove "ready without listener" lie.
+
+Hard fix
+--------
+1) shouldAnswerRemoteOffer(mySeat, offerFrom) = offerFrom !== mySeat
+   onRemoteOffer answers ANY remote offer (not seat===1).
+   shouldApplyRemoteAnswer likewise for host applying answer.from !== mySeat.
+   isInitialOffererSeat(0) keeps seat 0 as sole initial offerer / ICE restart.
+2) buildSdpPayload(local, this.seat) for offer AND answer (no hard-coded 0/1).
+3) publishVoiceDiag → RTDB voice/diag/{seat}; debugLine includes diag= lastErr=.
+4) shouldPublishVoiceReady({ hasActiveSession }) — Join no longer publishes
+   ready before PC; interval only while sessionRef set; session.start still
+   announceReady after bindSignaling.
+5) shouldFailClosedWithoutVoiceSession — Joined + no session → Failed UI.
+6) Tests: non-offer seat answers regardless of 0/1; ready without session
+   fails closed; diag/lastErr in debug line.
+
+Unchanged
+---------
+- VOICE_PTT_ENABLED = false
+- SIDE_LIVE_CHAT hostname gate (preview/localhost only; live OFF)
+- Forgot password / cut / COUNT tests green
+- Live hosting NOT deployed
+
+Files
+-----
+- src/multiplayer/voicePtt.ts
+- src/multiplayer/useSideLiveChat.ts
+- src/multiplayer/__tests__/voicePtt.test.ts
+- src/multiplayer/__tests__/sideLiveChatUi.test.ts
+- DEPLOY_SIDE_CHAT_ANSWERER_ROLE.txt (this note)
+
+Tests / build
+-------------
+- npm test — 61 files / 574 tests passed
+- npm run build — passed
+  - dist/assets/index-CtStNQYa.js (953.70 kB)
+  - dist/assets/index-a-wGPlVg.css (182.98 kB)
+
+Deploy
+------
+- firebase hosting:channel:deploy desktop-preview --expires 30d
+
+Deploy result (2026-09-20 13:15 ADT)
+------------------------------------
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  expires ~2026-10-20 13:15 ADT
+  serves index-CtStNQYa.js / index-a-wGPlVg.css
+  (bundle contains diag=, lastErr=, Voice session missing, Answer failed)
+- Live UNTOUCHED: https://supercrib241-baba2.web.app
+  still index-BG_0NujD.js / index-QmjC4Aj0.css
+
+Exact retest (two devices on preview)
+-------------------------------------
+1. Hard-refresh BOTH (Network must show index-CtStNQYa.js).
+2. Online match; both Join live chat (allow mic).
+3. Healthy debug within ~2–4s on BOTH seats, e.g.:
+   Host seat=0:
+     readyMe=1 peerReady=1 bothReady=1 micAttached=1
+     offer=1 answer=1 seenOffer=1 wroteAnswer=1 rtdbAnswer=1
+     ice=connected conn=connected seat=0
+   Guest seat=1 (healthy):
+     readyMe=1 peerReady=1 bothReady=1 micAttached=1
+     offer=1 answer=1 seenOffer=1 wroteAnswer=1 rtdbAnswer=1
+     ice=connected conn=connected seat=1
+     (no diag= / lastErr= — or diag empty after success)
+   Badge → green Live.
+4. If still red, screenshot BOTH debug lines:
+   - Host rtdbAnswer=0 → guest still not writing
+   - Guest wroteAnswer=0 + diag=/lastErr= → createAnswer/RTDB error (Safari)
+   - Guest "Voice session missing" → session never bound (ready fail-closed)
+   - answer=1 ice stuck → TURN/NAT
+5. Live site: no Join live chat control.

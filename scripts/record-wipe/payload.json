@@ -1,0 +1,15 @@
+{
+  "record": { "wins": 0, "losses": 0, "gamesPlayed": 0 },
+  "onlineRecord": { "wins": 0, "losses": 0, "gamesPlayed": 0 },
+  "tournamentRecord": {
+    "played": 0,
+    "wins": 0,
+    "top4": 0,
+    "gamePoints": 0,
+    "skunksGiven": 0,
+    "skunksReceived": 0,
+    "bestFinish": null,
+    "hosted": 0
+  },
+  "statsResetAt": 1789429252197
+}

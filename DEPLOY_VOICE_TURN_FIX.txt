@@ -1,0 +1,58 @@
+Voice PTT — TURN + ICE buffer + restart (fix "Voice not linked")
+Date: 2026-09-18 ~16:55 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Tar: /workspace/supercrib-dist.tar.gz (flat tar of dist/)
+
+SYMPTOM
+- RTDB talking/{seat} works (Opp / "Voice not linked" reacts), but WebRTC never
+  reaches connectionState === 'connected'. Common on phone/cellular/symmetric NAT
+  with STUN-only ICE — candidates never form a path, peer stays not-linked forever.
+
+FIXES (src/multiplayer/voicePtt.ts)
+
+1) TURN (not STUN-only)
+- Export VOICE_ICE_SERVERS: Google STUN + free OpenRelay (metered.ca openrelayproject)
+  turn:80, turn:443, turn:443?transport=tcp — no paid Twilio.
+- RTCPeerConnection({ iceServers: VOICE_ICE_SERVERS }).
+- VOICE_STUN_SERVERS kept as STUN-only filter alias for compat/tests.
+
+2) Buffer remote ICE until remote description set
+- pendingRemoteIce queue; addIceCandidate only after setRemoteDescription;
+  flush after offer/answer applied. Prevents lost candidates → permanent not-linked.
+
+3) Treat ICE connected as live
+- onconnectionstatechange + oniceconnectionstatechange
+- status 'live' when connectionState === 'connected' OR iceConnectionState
+  connected/completed (Safari often lags connectionState).
+
+4) ICE restart on failed
+- Host once: createOffer({ iceRestart: true }), clear own ice/{seat} only,
+  guest re-answers. UI resets to connecting (not stuck on error).
+
+5) Negotiation races
+- Host-only offers; guest re-answers new offers while stable (mic replaceTrack /
+  ICE restart). Own-seat ICE wipe only — never wipe the other seat’s candidates.
+
+6) UI
+- Keep “Voice not linked” when remoteTalking && !peerLive (no Opp until live).
+- Brief “Connecting voice…” while status is connecting/ready and !peerLive.
+- Table/emoji rails unchanged.
+
+VERIFY
+- npm test -- src/multiplayer/__tests__/voicePtt.test.ts  (8 passed, includes TURN url check)
+- npm run build  OK
+
+DEPLOY
+- Live: https://supercrib241-baba2.web.app
+- desktop-preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (expires 2026-10-18 ~03:03 ADT)
+
+HOW TO VERIFY (both devices)
+1. Hard-refresh BOTH devices (live or desktop-preview) — old JS is STUN-only.
+2. Start an online match; both players Hold once (allow mic + unlock remote audio).
+3. Hold again while the other listens — should hear peer when ICE/TURN links;
+   Opp pulse only when peerLive.
+4. During link-up you may briefly see “Connecting voice…”.
+5. If still “Voice not linked” after both held: network may block even TURN
+   (corporate/firewall); try another network (Wi‑Fi ↔ cellular) and note it.
+6. Vs AI / table layout / emoji rails unchanged.

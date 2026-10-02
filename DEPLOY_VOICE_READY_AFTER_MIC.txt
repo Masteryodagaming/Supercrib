@@ -1,0 +1,85 @@
+Voice hotfix: ready-after-mic (restore Connect / sound) — preview then live
+Date: 2026-09-22 ~19:33 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Project: supercrib241-baba2
+
+Ask
+---
+URGENT regression after one-way sendrecv deploy (index-1JGaDOn_.js):
+Josh: "They don't see anything now.. and don't have sound" on phones
+after hard refresh. Live already broken; hotfix preview then live ASAP.
+Keep two-way sendrecv intent (wait-for-mic answers); do not full rollback.
+
+Confirmed served (before hotfix)
+--------------------------------
+Live + preview both served index-1JGaDOn_.js / index-ChX0cL2_.css (200).
+App shell loads (not a blank white crash on boot). Voice path broken.
+
+Root cause
+----------
+One-way fix set shouldAnswerOfferWithoutMic() → false (correct: wait for
+sendrecv mic before createAnswer) BUT start() still always wrote
+ready/{seat}=true before adoptMicStream (void shouldAnnounce — "always
+announce now").
+
+Race:
+1) start() → ready=true (no mic yet)
+2) peer also ready → bothReady
+3) guest offer arrives; answer deferred (answer-wait-mic)
+4) host link watchdog @ 3.5s ICE-restarts / clears answer
+5) blind renegotiate bumps after late mic / Live (ensureOutboundAudio +
+   bumpRenegotiateAfterMicIfNeeded) thrashed Safari SDP further
+6) Result: Failed / no Live UI, no remote audio; game SFX often silent
+   after failed voice audio-session churn on iOS
+
+Also: remote ontrack accumulated tracks without dropping superseded audio
+→ Safari could stick on an ended silent track after renegotiate.
+
+Fix (targeted; keep sendrecv)
+-----------------------------
+- Honor start({ announceReady: false }); stayReady still set at PC bind.
+- useSideLiveChat: start({ announceReady: false }) → adopt/ensure mic →
+  announceReady() (ready only after mic on sender).
+- Ready heartbeat interval only publishes when isMicAttached().
+- shouldBumpRenegotiateAfterMicAttach → false while wait-for-mic answers
+  (no recvonly-first residue to upgrade); stop blind Live bumps.
+- shouldBumpOutboundUpgradeOnLive: only if currentDirection is
+  recvonly/inactive (belt-and-suspenders).
+- accumulateRemoteAudioTrack: replace prior audio tracks on renegotiate.
+- Kept: wait-for-mic answers, force sendrecv, SDP enable/restore, VAD
+  clone on ensureMic, unmute→play retry.
+
+Files
+-----
+- src/multiplayer/voicePtt.ts
+- src/multiplayer/useSideLiveChat.ts
+- src/multiplayer/__tests__/voicePtt.test.ts
+- DEPLOY_VOICE_READY_AFTER_MIC.txt (this note)
+
+Tests / build
+-------------
+- vitest voicePtt + remoteVoicePlayback + voiceVad + lobbyVoice +
+  voiceConfig + sideLiveChatUi — 113 passed
+- tsc --noEmit + vite build — passed
+  assets: index-Cn2CEX15.js / index-ChX0cL2_.css
+
+Deploy
+------
+1) firebase hosting:channel:deploy desktop-preview --expires 30d
+2) firebase deploy --only hosting  (live)
+
+Deploy result (2026-09-22 ~19:33 ADT)
+------------------------------------
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  expires ~2026-10-22 19:32 ADT
+  serves index-Cn2CEX15.js / index-ChX0cL2_.css
+- Live:    https://supercrib241-baba2.web.app
+  serves index-Cn2CEX15.js / index-ChX0cL2_.css
+
+Exact retest (two phones tonight)
+---------------------------------
+1. Hard-refresh preview (then live) — Network → index-Cn2CEX15.js.
+2. Online lobby → both Connect voice (allow mic) → green Live.
+3. Speak both ways (sendrecv still the goal).
+4. Start match: voice holds; game SFX still play (deal/peg/cut).
+5. Desktop browser: still no Connect voice (mobile-only gate unchanged).

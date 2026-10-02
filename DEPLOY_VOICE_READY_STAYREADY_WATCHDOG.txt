@@ -1,0 +1,91 @@
+Voice fix: stayReady mic-gate + softer link watchdog (two-way / no thrash)
+Date: 2026-09-22 ~19:50 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Project: supercrib241-baba2
+
+Ask
+---
+URGENT after ready-after-mic hotfix (index-Cn2CEX15.js):
+Josh (~19:46 ADT): "Having trouble staying connected and same thing host
+couldn't hear" — unstable Live + ONE-WAY again (guest hears host; host deaf).
+
+Root cause (code evidence)
+--------------------------
+1) READY BEFORE MIC (defeated Cn2CEX15 announceReady deferral)
+   start({ announceReady: false }) still set stayReady=true at PC bind.
+   Ready RTDB listener: if (stayReady && !mine) → wrote ready/{seat}=true
+   WITHOUT checking micAttached.
+   Sequence:
+     start() → stayReady=true → re-assert ready=true (no mic)
+     → bothReady → host offer → guest answer-wait-mic
+     → adoptMic late → answer / Live race
+   useSideLiveChat interval heartbeat already gated on isMicAttached();
+   session.startReadyHeartbeat() and stayReady re-assert did NOT.
+
+2) LINK WATCHDOG THRASH (connection drops)
+   scheduleLinkWatchdog fired ICE-restart at bothReady + 3500ms regardless
+   of whether answer existed. Premature bothReady (above) + slow Safari
+   mic/answer → ICE restart cleared answer / renegotiated blind → Failed
+   or one-way stuck state. Matches "trouble staying connected".
+
+3) Blind renegotiate bumps still called from kickNegotiate / bothReady
+   guest path even though shouldBumpRenegotiateAfterMicAttach()===false;
+   bumpRenegotiateAfterMicIfNeeded() ignored that helper and always bumped.
+
+Kept (do not regress)
+---------------------
+- shouldAnswerOfferWithoutMic() === false (wait mic before answer)
+- capture/restore send track enabled around createOffer/Answer
+- forceAudioSendRecv after mic; outbound Live bump only recvonly/inactive
+- VAD cloneMicTrackForVad; accumulateRemoteAudioTrack replace; unmute→play
+- Mobile-only voice gate unchanged
+
+Fix
+---
+- shouldAnnounceVoiceReady / shouldReassertVoiceReady: require micAttached
+- announceReady() + startReadyHeartbeat + stayReady listener honor mic gate
+- useSideLiveChat: announceReady only when micOk
+- shouldRunLinkWatchdogIceRestart: need mic; with answer wait 8s; without
+  answer wait 14s (poll 1s). No ICE-restart at 3.5s mid answer-wait-mic.
+- bumpRenegotiateAfterMicIfNeeded uses shouldBump… (no-op while wait-mic)
+- Remove blind guest renegotiate bumps on bothReady / kickNegotiate
+- createAnswer/Offer: if local SDP dir recvonly/inactive → force sendrecv,
+  keep track.enabled, retry once; diag answer-dir / answer-dir-bad
+- Debug line: sendDir= + sendEn= (VAD gate) for Josh screenshot proof
+
+Files
+-----
+- src/multiplayer/voicePtt.ts
+- src/multiplayer/useSideLiveChat.ts
+- src/multiplayer/__tests__/voicePtt.test.ts
+- DEPLOY_VOICE_READY_STAYREADY_WATCHDOG.txt (this note)
+
+Tests / build
+-------------
+- vitest voicePtt + remoteVoicePlayback + voiceVad + lobbyVoice +
+  voiceConfig + sideLiveChatUi — 118 passed
+- tsc --noEmit + vite build — passed
+  assets: index-DVjQ1RpI.js / index-ChX0cL2_.css
+
+Deploy
+------
+1) firebase hosting:channel:deploy desktop-preview --expires 30d
+2) firebase deploy --only hosting  (live)
+
+Deploy result (2026-09-22 ~19:50 ADT)
+------------------------------------
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  expires ~2026-10-22 19:49 ADT
+  serves index-DVjQ1RpI.js / index-ChX0cL2_.css
+- Live:    https://supercrib241-baba2.web.app
+  serves index-DVjQ1RpI.js / index-ChX0cL2_.css
+
+Exact retest (two phones)
+-------------------------
+1. Hard-refresh preview (then live) — Network → index-DVjQ1RpI.js.
+2. Online lobby → both Connect voice (allow mic) → green Live (should stick).
+3. Speak both ways: host hears Josh; Josh hears host.
+4. Watch debug line: micAttached=1 before readyMe=1; sendDir=sendrecv
+   (sendEn may be 0 while silent — VAD); no diag=link-watchdog-ice early.
+5. Start match: voice holds; game SFX still play.
+6. Desktop browser: still no Connect voice (mobile-only gate unchanged).

@@ -1,0 +1,84 @@
+{
+  "tournamentId": "-STUDY20PRACTICE01",
+  "joinCode": "STUDY1",
+  "seed": 20260914,
+  "players": 20,
+  "rrRounds": 19,
+  "rrGames": 190,
+  "rrTop8": [
+    {
+      "place": 1,
+      "name": "AI Jordan",
+      "userId": "ai-bot-4",
+      "pts": 28,
+      "wl": "14-5",
+      "spread": 305
+    },
+    {
+      "place": 2,
+      "name": "AI Casey",
+      "userId": "ai-bot-5",
+      "pts": 28,
+      "wl": "14-5",
+      "spread": 203
+    },
+    {
+      "place": 3,
+      "name": "AI Parker",
+      "userId": "ai-bot-19",
+      "pts": 26,
+      "wl": "13-6",
+      "spread": 261
+    },
+    {
+      "place": 4,
+      "name": "AI Avery",
+      "userId": "ai-bot-9",
+      "pts": 26,
+      "wl": "13-6",
+      "spread": 222
+    },
+    {
+      "place": 5,
+      "name": "AI Sam",
+      "userId": "ai-bot-2",
+      "pts": 22,
+      "wl": "11-8",
+      "spread": 164
+    },
+    {
+      "place": 6,
+      "name": "Joshwa Milliea",
+      "userId": "CphdDQWSDQbCf58rAMpo78wtFFm2",
+      "pts": 22,
+      "wl": "11-8",
+      "spread": 58
+    },
+    {
+      "place": 7,
+      "name": "AI Blake",
+      "userId": "ai-bot-10",
+      "pts": 20,
+      "wl": "10-9",
+      "spread": 118
+    },
+    {
+      "place": 8,
+      "name": "AI Logan",
+      "userId": "ai-bot-18",
+      "pts": 20,
+      "wl": "10-9",
+      "spread": 63
+    }
+  ],
+  "podium": {
+    "first": "AI Casey",
+    "second": "AI Jordan",
+    "third": "AI Parker",
+    "fourth": "AI Sam",
+    "firstId": "ai-bot-5",
+    "secondId": "ai-bot-4",
+    "thirdId": "ai-bot-19",
+    "fourthId": "ai-bot-2"
+  }
+}

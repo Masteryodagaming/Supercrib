@@ -1,0 +1,54 @@
+Card play SFX = cardboard slap (not coin/bucket) — 2026-09-19 ~23:08 ADT
+
+Ask
+---
+Josh: Playing a card sounds like a coin dropping in a bucket. Wants a card
+sound instead. Preview ONLY. Do not promote live. Do not touch voice/chat.
+
+Root cause
+----------
+On every peg sequence growth, App.tsx called BOTH playCard() AND playPeg(points).
+Even non-scoring plays layered peg wood WAVs (dice clacks that read metallic /
+coin-in-bucket) on top of the card slap. Scoring plays also layered prize synth.
+
+Fix
+---
+1. App.tsx — plain card play: playCard() only (card_play1/2.wav).
+   playPeg(pts) only when this play scored points (pts > 0) → wood tick +
+   prize tiers (2/4/6/12) for scoring pegs only.
+2. gameSfx.ts — synthCard fallback = quiet cardboard (soft mid rustle + low
+   thump); no bright highpass / metallic plink.
+3. Peg sample order prefers peg_wood.wav (woody) ahead of peg1/2/3.
+4. Kept: shuffle WAVs; withRunningCtx / listeners-until-running unlock;
+   Settings mute; go/win synth; VOICE_PTT_ENABLED = false.
+
+Files
+-----
+- src/ui/App.tsx
+- src/audio/gameSfx.ts
+- src/audio/__tests__/gameSfx.test.ts
+- public/sfx/README.txt
+- DEPLOY_CARD_PLAY_SFX.txt (this note)
+- src/multiplayer/voiceConfig.ts (VOICE_PTT_ENABLED = false, unchanged)
+
+Verify
+------
+1. Hard-refresh desktop-preview on Chrome.
+2. Peg a non-scoring card → cardboard slap only (no coin/bucket/wood tick).
+3. Peg a 2/4/6/12 → card slap + wood tick + prize tier.
+4. Shuffle / deal still card WAVs; Settings mute works; no Hold/PTT UI.
+
+Deploy (hard constraint)
+------------------------
+- desktop-preview ONLY — live NOT promoted
+- npm test / npm run build before deploy
+
+Deploy results
+--------------
+- npm test — 55 files / 515 tests passed
+- npm run build — passed (index-BVHZuAGF.css / index-De_z7cpJ.js)
+- desktop-preview channel deployed 2026-09-19 ~23:08 ADT
+- Preview serves index-De_z7cpJ.js
+- Live untouched (not promoted)
+- Preview URL: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (channel expires ~2026-10-19 23:08 ADT)

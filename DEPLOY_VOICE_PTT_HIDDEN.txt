@@ -1,0 +1,20 @@
+Voice PTT hidden — 2026-09-18 ~20:45 ADT
+
+- Added one feature flag: `src/multiplayer/voiceConfig.ts` (`VOICE_PTT_ENABLED = false`).
+- App passes `voicePtt` only when enabled; Table also guards rendering. The hook exits its WebRTC lifecycle when disabled, and its hold callback is inert.
+- Voice files remain for a later re-enable. Tournament, emoji, and table layout work were left untouched.
+- Tests: `npm test` — 43 files / 431 tests passed.
+- Build: `npm run build` passed.
+- Deploy: desktop-preview only (live intentionally not promoted):
+  https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+
+Live promoted — 2026-09-19 ~12:46 ADT
+
+- Confirmed no other render path: only `Table.tsx` mounts `PushToTalkButton`, gated by `VOICE_PTT_ENABLED`; App only spreads `voicePtt` when the flag is true; hook/WebRTC stays inert when false. Tournament wrappers do not render Hold/PTT.
+- Flag left `false` in `src/multiplayer/voiceConfig.ts` (not flipped on).
+- Tests: `npm test` — 43 files / 431 tests passed.
+- Build: `npm run build` passed (bundle has no "Hold to talk" string).
+- Deploy (same dist):
+  - live: https://supercrib241-baba2.web.app
+  - desktop-preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+- Pegboard hole math untouched.

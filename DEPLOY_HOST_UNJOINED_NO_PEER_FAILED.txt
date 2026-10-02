@@ -1,0 +1,84 @@
+Host unjoined never peer-Failed — desktop-preview ONLY
+Date: 2026-09-20 ~15:21 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Project: supercrib241-baba2
+
+Ask
+---
+Josh shot room 7WRQQ (~15:15 ADT, seat 0 host PC Chrome): Failed badge
+“Dummy2 needs Connect — waiting on them.” Debug readyMe=0 peerReady=0
+micAttached=0. Host never Connected voice; UI wrongly blamed peer. Preview only.
+
+Live RTDB rooms/7WRQQ/voice (dump ~15:17–15:21 ADT)
+----------------------------------------------------
+ready: [false, true]   # seat0 host never ready; seat1 Dummy2 ready
+talking: [null, false]
+offer / answer / ice / diag: ABSENT
+Room: status=waiting, hostName=Dummy, guestName=Dummy2, both seats connected.
+
+Root cause
+----------
+1) OnlineLobby blamed peer whenever joined && !live — no readyMe/peerReady gate.
+   So any Failed/offline (peer-wait 15s, remount fail-closed, dead session) showed
+   “{peer} needs Connect” even when self never published ready (readyMe=0).
+2) Peer-wait timers started at session start() and Failed on !bothReady after 15s
+   without requiring localReady — so readyMe=0 could still surface Failed.
+3) Fail-closed / mic-fail left joined=true → Failed badge stuck; Connect re-tap
+   was a no-op while joinedRef stayed true.
+
+Fix
+---
+1) UX helpers (useSideLiveChat): shouldShowPeerNeedsConnect / shouldPulseConnectVoice /
+   effectiveLobbyVoiceJoined / shouldPeerWaitFail / deriveLobbyVoiceHint.
+   - !joined or (offline && !localReady) → pulse Connect; NEVER peer-blame Failed.
+   - Peer “{name} needs Connect” ONLY when joined && localReady && !peerReady.
+2) voicePtt: schedulePeerWaitTimers only after localReady sticks; Failed gated by
+   shouldPeerWaitFailClosed(localReady). Seat-aware wait copy.
+3) Mic denied → “Allow microphone, then tap Connect voice”.
+4) Fail-closed / mic-fail / start-fail / onStatus error with !readyMe → drop joined
+   so Connect pulses and re-tap works.
+5) OnlineLobby + App pass localReady/peerReady into lobby voice UI.
+
+Files
+-----
+- src/multiplayer/useSideLiveChat.ts
+- src/multiplayer/voicePtt.ts
+- src/ui/OnlineLobby.tsx
+- src/ui/App.tsx
+- src/multiplayer/__tests__/sideLiveChatUi.test.ts
+- src/multiplayer/__tests__/voicePtt.test.ts
+- DEPLOY_HOST_UNJOINED_NO_PEER_FAILED.txt (this note)
+
+Tests / build
+-------------
+- vitest sideLiveChatUi + voicePtt + lobbyVoice — 64 passed
+- tsc --noEmit — passed
+- npm run build — passed (index-BUdF0b2i.js / index-BLP8avTE.css)
+
+Deploy
+------
+- firebase hosting:channel:deploy desktop-preview --expires 30d
+
+Deploy result (2026-09-20 15:21 ADT)
+------------------------------------
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  expires ~2026-10-20 15:20 ADT
+  serves index-BUdF0b2i.js / index-BLP8avTE.css
+  (bundle contains: Allow microphone then tap Connect voice,
+   Both here — tap Connect voice, needs Connect — waiting on them,
+   Waiting for opponent to tap Connect voice)
+- Live UNTOUCHED: https://supercrib241-baba2.web.app
+  still index-BG_0NujD.js
+
+Exact retest (Josh host PC — hard-refresh preview)
+--------------------------------------------------
+1. Hard-refresh host PC on preview (Network must show index-BUdF0b2i.js).
+2. Create/join room with Dummy2 already Connected voice (or both land Both here).
+3. BEFORE tapping Connect on seat 0: expect pulse Connect voice — NEVER Failed
+   blaming Dummy2. Hint: “Both here — tap Connect voice…”.
+4. Tap Connect voice (allow mic). Expect micAttached=1, ready/0=true sticks,
+   then link / Live (Dummy2 already ready).
+5. If mic denied: inline “Allow microphone, then tap Connect voice” — no peer Failed.
+6. If host Connects first and peer has not: “{peer} needs Connect — waiting on them”;
+   Failed only after ~15s while readyMe=1 && peerReady=0.
+7. Live site unchanged (no Connect voice / old bundle).

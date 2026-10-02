@@ -1,0 +1,72 @@
+Online push-to-talk (WebRTC + RTDB signaling)
+Date: 2026-09-18 ~14:32 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Tar: /workspace/supercrib-dist.tar.gz (flat tar of dist/)
+
+WHAT
+- Hold-to-talk mic on the play table during online matches only (hidden for
+  vs-AI; not shown while spectating).
+- Hold → unmute local mic to peer (track.enabled = true); release → mute
+  (enabled = false). Mic is never left live when not holding.
+- Mic permission requested on first press; denied → brief inline error.
+- Glowing active state while held; “Opp” speaking pulse when peer talking/{seat}
+  is true. Optional Space while the button is focused.
+- No audio recording / no Storage upload — peer-to-peer WebRTC only.
+
+BUTTON PLACEMENT
+- Bottom-center of `.table-mid-zone` (above the hand), clear of emoji rails,
+  side avatars, ZOOM, board scores, and hand cards.
+
+SIGNALING PATH (Firebase RTDB)
+  rooms/{code}/voice/
+    offer          — host SDP { type, sdp, from: 0, at }
+    answer         — guest SDP { type, sdp, from: 1, at }
+    ice/{seat}/{pushId} — ICE candidates per seat
+    talking/{seat} — boolean for UI pulse (true while holding)
+
+WebRTC
+- getUserMedia({ audio: true, video: false }) once per session (first PTT press)
+- RTCPeerConnection with Google public STUN (stun.l.google.com / stun1)
+- Seat 0 creates offer when both seats connected; seat 1 answers
+- Re-negotiate on reconnect (session restart clears ICE + SDP)
+- NAT caveat (v1): STUN only — no TURN. Symmetric / strict NATs may fail.
+  Add a TURN server later if needed; not required for typical home Wi‑Fi.
+
+FIREBASE RULES
+- No database.rules.json in repo. Existing beta rooms rules already allow
+  rooms/$code read+write (same as reaction):
+    "rooms": { "$code": { ".read": true, ".write": true } }
+  So rooms/$code/voice inherits that. No Console change required for v1.
+- If you later lock rooms, also allow authenticated (or seat) R/W on
+  rooms/$code/voice matching reaction.
+
+FILES
+- src/multiplayer/voicePtt.ts       — STUN, payloads, VoicePttSession
+- src/multiplayer/useVoicePtt.ts    — React lifecycle hook
+- src/ui/PushToTalkButton.tsx       — hold UI + remote <audio>
+- src/ui/Table.tsx                  — mid-zone button wiring
+- src/ui/App.tsx                    — enable when online + connected
+- src/multiplayer/roomSession.ts    — clear voice node on leaveRoom
+- src/ui/styles.css                 — .ptt-* styles
+- src/multiplayer/__tests__/voicePtt.test.ts
+
+HOW TO TEST (two phones)
+1. Open https://supercrib241-baba2.web.app on two phones (or live + desktop-preview).
+2. Host: Find Match → Play online → create room; guest joins with code.
+3. Complete cut / start playing so both are on the table (Connected banner).
+4. Hold the mic pill (bottom mid under the board). Allow mic on first press.
+5. Other phone should hear you only while held; release mutes. Opp pulse shows
+   on the listener when the talker is holding.
+6. Quit/leave — voice node cleared; rematch starts a fresh PC.
+
+BUILD / DEPLOY
+- npm test -- src/multiplayer/__tests__/voicePtt.test.ts  (7 passed)
+- npm run build  OK
+- Live: https://supercrib241-baba2.web.app
+- desktop-preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (expires 2026-10-18 ~03:03 ADT)
+
+KNOWN LIMITS
+- No TURN → some cellular / corporate NATs won’t connect.
+- First press may briefly renegotiate after mic grant.
+- Does not break existing reaction emoji sync (separate room.reaction path).

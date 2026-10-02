@@ -1,0 +1,23 @@
+Spade Wizard (ace_spade) art update
+Date: 2026-09-17 ~21:55 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Tar: /workspace/supercrib-dist.tar.gz (flat tar of dist/)
+
+ART (512 RGBA sticker, flood-cut near-white → bbox → ~4% pad → LANCZOS)
+- public/reactions/anim/ace_spade/f1.png … f4.png
+- named: 00_hands, 01_smoke, 02_ace, 03_laugh (removed stale 01_cloud.png)
+- public/reactions/ace_spade.png (=f1 idle)
+- meta.json frameDurationsMs [225,275,350,1250] durationMs 2100 (UNCHANGED)
+- Frame bytes: f1 158860, f2 170703, f3 163500, f4 172480
+
+CACHE
+- ANIM_V_ACE 5 → 6 (anim frame URLs ?v=6)
+- DUMMY_EMOJI_ART.ace_spade /reactions/ace_spade.png?v=4 → ?v=5
+- coins emoji_ace_spade imageSrc ?v=4 → ?v=5
+- Label Spade Wizard, id ace_spade, 200 SC, Dummy|Owner unlock unchanged
+
+DEPLOY
+- Live: https://supercrib241-baba2.web.app
+- desktop-preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app (expires 2026-10-17)
+
+TESTS: reactEmojis.test.ts 24 + coins.test.ts 27 = 51 passed; npm run build OK

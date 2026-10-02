@@ -1,0 +1,28 @@
+Desktop board butcher — --board-w revert (no deploy) — 2026-09-16 ~22:20 ADT
+
+DIAGNOSIS (file/line evidence: src/ui/styles.css):
+  1) PRIMARY — aggressive desktop --board-w (REVERTED in tree, not deployed)
+     Was @900: clamp(320px, 86%, 500px) / @1100: clamp(360px, 88%, 580px)
+     Plank aspect-ratio 280/400 (L502) → height ≈ width × 1.429
+       500px → ~714px tall; 580px → ~829px tall
+     .table-mid-zone overflow:hidden + flex min-height:0 (L663–672, L3358–3367)
+     inside .app.app-playing 100dvh overflow:hidden (L3876–3882)
+     → plank taller than remaining mid-zone → clipped / "totally butchered".
+     Josh ZF-felt-first ask did not request this rail-stretch scale.
+
+  2) Framed shell @900 min(720)/@1100 min(820) (L7786–7789, L8280–8282)
+     Not the butcher — restores intended phone column; letterbox outside OK.
+
+  3) ZF felt desktop auto 100% + center top (L6979–6986, L8265–8271)
+     Felt letterbox only; does not distort plank paint/geometry.
+
+  4) Dumpster plank radial — STILL VALID (leave alone)
+     L7092: ellipse 4.2% 4.2% at 76.5% 10.5% (not invalid circle%)
+
+FIX APPLIED (workspace only):
+  @900:  --board-w: clamp(260px, 30vw, 400px)  (~max height 571px)
+  @1100: --board-w: clamp(300px, 28vw, 460px)  (~max height 657px)
+  Matching .table/.pegboard/.board-side-scores fallbacks updated.
+  Pegboard hole geometry / maple / ZF board paint / Dumpster ellipse: untouched.
+
+Do NOT firebase deploy from this investigation unless parent ships intentionally.

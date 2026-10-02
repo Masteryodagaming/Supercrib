@@ -1,0 +1,67 @@
+PC start / splash ZF tile fix — 2026-09-19 ~20:51 ADT (America/Halifax)
+Tree: /workspace/supercrib
+desktop-preview ONLY (live untouched)
+
+Ask
+---
+Josh (desktop Chrome / desktop-preview): start/splash distorted on PC —
+center column shows ZERO FORGE PRESENTS SUPERCRIB, left/right show tiled /
+cropped icy ZERO + metallic FORGE fragments outside a narrow dark-green
+block. Classic ZF felt stretch/tile on home/start — not in-match. Phone
+splash must stay good. Do not revert in-match board / hand / pace /
+Competitive work. Preview only.
+
+What caused the tile
+--------------------
+Splash renders inside `.app`. Felt menu-lock (all image felts × menus) had:
+
+  .app[class*="felt-"]:not(.app-playing) > * { position: relative; z-index: 1; }
+
+Higher specificity than `.splash-screen { position: fixed }`, so when ZF
+(or Dumpster) felt was equipped at boot, Splash lost viewport-fixed and was
+trapped in the desktop phone shell (max-width ~680/780). The portrait
+lockup `contain`-fitted that narrow column (dark-green block); outside it,
+the fixed felt `::before` / html letterbox showed ZF ZERO|FORGE side rails —
+looked like tiled/cropped side fragments. Classic green (no felt-* class)
+never hit the rule, so phone / non-ZF looked fine.
+
+CSS fix (src/ui/styles.css only — no board clamps / in-match)
+-------------------------------------------------------------
+1) Menu-lock child stacking excludes splash:
+     .app[class*="felt-"]:not(.app-playing) > *:not(.splash-screen)
+2) Explicit restore viewport-fixed for splash under .app / felt-*:
+     .app[class*="felt-"]:not(.app-playing) > .splash-screen,
+     .app > .splash-screen
+   → position:fixed; inset:0; 100dvw×100dvh; z-index:200; no shell
+     max-width / radius / shadow
+3) .splash-stage: keep background-size:contain + no-repeat + solid
+   #020d07 letterbox; wide PC media reinforces contain/no-repeat
+   (never 100% 100% stretch, never repeat)
+
+UNTOUCHED
+---------
+- In-match .app-playing shell / --board-w / hand hit-target / pace /
+  Competitive claim UI (parallel ask owns board resize + claim visibility)
+- ZF / Dumpster --felt-pin-* paint + stationary ::before pin for menus
+- Pegboard hole math / board skin paint
+
+Tests / build / deploy
+----------------------
+- src/ui/__tests__/pcStartSplash.css.test.ts (3)
+- npm test — 47 files / 455 tests passed
+- npm run build — OK (index-DJyz8ubS.css / index-DzM6pmIW.js)
+- firebase hosting:channel:deploy desktop-preview ONLY
+- Preview serves new CSS; live still index-DwOlaAp5.css
+
+Preview URL
+-----------
+https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+
+Verify
+------
+1. Hard-refresh desktop-preview in a wide Chrome window (ZF felt equipped).
+2. Boot splash: one centered lockup, solid dark-green letterbox sides —
+   no repeating ZERO/FORGE fragments.
+3. Phone splash still full lockup (contain / 88% auto portrait).
+4. Home menus still stationary felt pin; in-match board size unchanged by
+   this change.

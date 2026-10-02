@@ -1,0 +1,30 @@
+Arena — hide gray track underlay (SVG chrome + painted lane panels)
+Date: 2026-09-17 ~22:42 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Tar: /workspace/supercrib-dist.tar.gz (flat tar of dist/)
+
+CSS (.app.board-arena only — ZF / Dumpster untouched)
+- Hide SVG track chrome: .board-svg > path AND > line
+  fill/stroke transparent; opacity 0; visibility hidden
+  → corridor outline, midline, decade/mid ticks, start cap
+- Keep .hole-dot / pegs / .hole-trap; maple rects already transparent
+- Pegboard.tsx hole math NOT changed
+
+ART (CSS alone left painted gray lane panels)
+- Muted gray lane underlays in public/boards/arena.jpg → surrounding ice
+  (kept red/blue painted hole rings, players, rink markings)
+- Regenerated arena-thumb.jpg
+- Cache bump ?v=2 on:
+  styles.css plank + swatch urls
+  Store.tsx board preview
+  coins.ts board_arena imageSrc
+
+DEPLOY
+- Live: https://supercrib241-baba2.web.app
+- desktop-preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (expires 2026-10-17 ~22:06 ADT)
+
+VERIFY
+- Live CSS contains .board-svg>path,.board-svg>line{…visibility:hidden}
+- Live /boards/arena.jpg?v=2 → 200, 731737 bytes
+- npm run build OK

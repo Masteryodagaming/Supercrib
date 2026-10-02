@@ -1,0 +1,81 @@
+Voice one-way fix (guest sendrecv) — preview then live
+Date: 2026-09-22 ~18:48 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Project: supercrib241-baba2
+
+Ask
+---
+Josh (two phones, mobile Live): can hear host; host cannot hear Josh.
+Prior silent-VAD fix (monitor vs sender clone) still broken on one seat —
+guest outbound / host inbound on iOS Safari. Desktop still no voice
+(mobile-only gate). Preview first, then live if solid.
+
+Root cause
+----------
+1) Guest (often seat1) answered the host offer during start() BEFORE
+   adoptMicStream attached the mic → SDP a=recvonly. Host→guest media
+   worked; guest→host never got a send m-line. Renegotiate-after-mic was
+   unreliable once ICE was already live one-way on Safari.
+
+2) createOffer/createAnswer with sender track.enabled=false could emit
+   a=inactive/recvonly on Safari even after replaceTrack.
+
+3) ensureMic (fallback path) attached the raw capture track without the
+   VAD monitor/sender clone — same silent-analyser deadlock as before on
+   any seat that hit that path.
+
+4) Host remote <audio> could stay on a silent first attach; remote track
+   unmute did not retry play().
+
+Fix
+---
+- shouldAnswerOfferWithoutMic() → false; queue offer until micAttached;
+  flush after adoptMicStream/ensureMic (Join already has gesture mic).
+- Briefly enable sender clone around createOffer/createAnswer, then
+  restore VAD gate (capture/restoreSendTrackEnabledForSdp).
+- forceAudioSendRecv() after mic attach + on setTalking(true) + on Live
+  (ensureOutboundAudio one-shot renegotiate bump for answerer).
+- ensureMic uses cloneMicTrackForVad (same as adoptMicStream).
+- Accumulate remote tracks into one MediaStream across renegotiate.
+- remoteVoicePlayback: track.onunmute → re-enable + play().
+- Preserve-mic remount keeps monitor track.enabled=true for VAD.
+
+Gate (unchanged)
+----------------
+voice = SIDE_LIVE_CHAT_ENABLED && hostAllowed && isMobileClient()
+Desktop browsers: no Connect voice.
+
+Files
+-----
+- src/multiplayer/voicePtt.ts
+- src/multiplayer/remoteVoicePlayback.ts
+- src/multiplayer/__tests__/voicePtt.test.ts
+- DEPLOY_VOICE_ONE_WAY_SENDRECV.txt (this note)
+
+Tests / build
+-------------
+- vitest voicePtt + remoteVoicePlayback + voiceVad + lobbyVoice + voiceConfig
+  — 85 passed
+- tsc --noEmit + vite build — passed
+  assets: index-1JGaDOn_.js / index-ChX0cL2_.css
+
+Deploy
+------
+1) firebase hosting:channel:deploy desktop-preview --expires 30d
+2) firebase deploy --only hosting  (live)
+
+Deploy result (2026-09-22 18:48 ADT)
+------------------------------------
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  expires ~2026-10-22 18:47 ADT
+  serves index-1JGaDOn_.js / index-ChX0cL2_.css
+- Live:    https://supercrib241-baba2.web.app
+  serves index-1JGaDOn_.js / index-ChX0cL2_.css
+
+Exact retest (two phones)
+-------------------------
+1. Hard-refresh preview (then live) — Network → index-1JGaDOn_.js.
+2. Online lobby → both Connect voice (allow mic) → green Live.
+3. Speak both ways: host hears Josh; Josh hears host.
+4. Start match: voice holds; still two-way.
+5. Desktop: still no Connect voice UI.

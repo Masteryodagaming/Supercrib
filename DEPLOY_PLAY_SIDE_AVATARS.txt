@@ -1,0 +1,47 @@
+Play side avatars (pegboard L/R gaps)
+Date: 2026-09-18 ~13:41 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Tar: /workspace/supercrib-dist.tar.gz (flat tar of dist/)
+
+WHAT
+- Compact AvatarView circles in the empty gutters beside the gold/maple plank
+  during play: LEFT = seat 0 (red ring / tone-you = board-chip tone-a #c44),
+  RIGHT = seat 1 (blue ring / tone-opp = board-chip tone-b #3a6ec8).
+- Mid-plank height; does not cover emoji rails, ZOOM, board scores, hand, or plank.
+- Phone ~44px; desktop ~52px. Avatar-only (no name under circle).
+
+PLACEMENT
+- Pegboard `.board-plank-with-zoom` side gutters (left gutter centered mid-plank;
+  right gutter keeps ZOOM top-right, avatar absolutely mid under it).
+- Hole math / board paint / emoji rails untouched.
+
+DATA
+- You (own seat): live profile displayName / avatarId / avatarDataUrl from App.
+- Vs-AI opponent (seat 1): Crib Master (`crib_master`) + seat label ("AI").
+- Online opponent: room.seats[N].avatarId written on create/join/markConnected
+  (catalog/unlock id only — no data URL in RTDB). Missing → default peg.
+- Spectate: both seats from room seat payloads.
+
+AVATARVIEW FIX
+- New `getShopAvatarItem(id)` resolves shop avatars by catalog id OR unlockId
+  (e.g. `supercrib_father` → avatar_supercrib_father art). Avatar-kind only.
+
+FILES
+- src/ui/Pegboard.tsx — gutters + AvatarView slots
+- src/ui/Table.tsx — seatAvatar0/1 props
+- src/ui/App.tsx — profile / AI / room sourcing + session avatarId on create/join
+- src/ui/AvatarView.tsx — unlockId shop lookup
+- src/ui/styles.css — gutter + tone-you / tone-opp rings
+- src/profile/coins.ts — getShopAvatarItem
+- src/multiplayer/types.ts — RoomSeat.avatarId?
+- src/multiplayer/roomSession.ts — create/join/markConnected avatarId
+- src/multiplayer/useRoomSession.ts — thread avatarId
+- src/profile/__tests__/avatars.test.ts — unlockId lookup tests
+
+TESTS
+- 422 passed; npm run build OK
+
+DEPLOY
+- Live: https://supercrib241-baba2.web.app
+- desktop-preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (expires 2026-10-18 ~03:03 ADT)

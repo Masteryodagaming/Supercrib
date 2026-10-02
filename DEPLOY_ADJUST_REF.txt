@@ -1,0 +1,53 @@
+Adjust → Ref decides who was right — 2026-09-19 ~22:54 ADT
+
+Ask
+---
+After opponent Adjusts a hand claim (higher or lower than announced), the game
+referees vs true raw — do not silently accept the adjusted number as gospel.
+Approve path unchanged. Preview only. No voice/chat. No live promote.
+
+Ref rules (then existing resolve on kept number)
+-----------------------------------------------
+1. Claimant announces raw hand total → pendingReview.
+2. Opponent Approve → keep claim → applyAnnouncedClaim (unchanged).
+3. Opponent Adjust(adjusted):
+   - Adjuster exact & claimant not → keep adjuster; “Adjuster was right”.
+   - Claimant exact & adjuster wrong → keep claimant; wrong Adjust ignored.
+   - Neither exact → keep closer to true; equal distance → claimant.
+   - Then applyAnnouncedClaim(kept) = exact / overclaim steal×2 / underclaim
+     → Accept|Muggins as today.
+4. UI banner: “Ref: true was N — You/Opponent was right” (or neither-exact /
+   closer wording). Engine message also starts with “Ref: …”.
+
+Works online (phone+browser) + vs AI Dummy2 (human-driven Approve/Adjust).
+Hand wording kept. Sticky Approve/Adjust, lobby mode-after-both, WAV SFX,
+peg prize tiers, audio unlock untouched. VOICE_PTT_ENABLED = false.
+
+How to test on preview
+----------------------
+1. Hard-refresh desktop-preview.
+2. Competitive vs Dummy2: announce wrong total → Adjust to true → banner
+   “You/Opponent was right” → exact peg.
+3. Announce exact → Adjust wrong → ref keeps claimant; no steal from wrong Adjust.
+4. Both wrong → closer kept; overclaim still steal×2 / underclaim still Muggins.
+5. Approve path: same as before (no ref banner).
+6. Online Competitive: same seat-gated review + ref on Adjust.
+
+Deploy (hard constraint)
+------------------------
+- npm test — 55 files / 514 tests passed
+- npm run build — passed (index-BVHZuAGF.css / index-B3zKnQnz.js)
+- firebase hosting:channel:deploy desktop-preview ONLY (not live)
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (channel expires ~2026-10-19 22:54 ADT)
+- Live untouched (not promoted)
+- VOICE_PTT_ENABLED left false
+
+Key files
+---------
+- src/engine/competitiveScoring.ts (refereeAdjustKeep)
+- src/engine/supercrib.ts (adjustShowClaim + CompetitiveRefNote / lastRef)
+- src/engine/__tests__/competitiveScoring.test.ts
+- src/ui/ShowOverlay.tsx (ref banner You/Opponent), Rules.tsx
+- src/multiplayer/serialize.ts (+ serialize test)
+- DEPLOY_ADJUST_REF.txt (this note)

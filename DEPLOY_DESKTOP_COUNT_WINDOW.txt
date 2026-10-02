@@ -1,0 +1,66 @@
+Desktop count/claim window visible (browser mode) — 2026-09-19 ~20:55 ADT
+
+Ask
+---
+Josh (Chrome desktop-preview): can’t see the count window in browser mode;
+suggests resize the board to fit everything nicely. Competitive claim/count
+keypad overlay was clipped below the fold after pass-2 pegboard caps
+(--board-w up to 560–620 → plank height ~800–886px).
+
+Fix (desktop / hover:hover @900+; phone untouched)
+--------------------------------------------------
+1) Modest pegboard shrink (pass-3 — still readable, not phone plank):
+   @900:  --board-w clamp(340px, 36vw, 480px)  (was pass-2 380/42vw/560)
+   @1100: --board-w clamp(380px, 34vw, 540px)  (was pass-2 420/40vw/620)
+   Max plank height ≈ 686 / 771 (was ≈ 800 / 886) — leaves room for hand + claim.
+
+2) Short-height safety broadened:
+   @900 + max-height 920 (was 820): clamp(240px, 32vh, 360px)
+   So typical laptop Chrome windows get a height-aware plank.
+
+3) Claim overlay visibility (Competitive keypad + Confirm):
+   .table > .overlay:has(.show-overlay) → position:fixed; inset:0; z-index:40
+   (viewport-anchored above board/mid/hand; not covered by mid-zone)
+   Sticky .claim-confirm; max-height min(92dvh, 680px) when claim-pad present.
+   @900 + hover:hover + max-height 900: compact keypad (2.15rem keys) +
+   slightly smaller show fan so Confirm stays on-screen without scroll-off.
+
+KEPT
+----
+- HAND_HIT_TARGET: hand z-index 14, mid-zone pointer-events none,
+  crib/starter compact vs large hand
+- PC splash ZF tile fix (contain + menu-lock excludes .splash-screen) —
+  re-read before edit; pcStartSplash.css.test.ts still green
+- Phone ≤430–520 shrinks; tablet hover:none path
+- Pegboard hole math / ZF+Dumpster felt 100% auto (no warp)
+- Live hosting untouched
+
+Files
+-----
+- src/ui/styles.css
+- src/ui/__tests__/desktopCountWindow.css.test.ts (new)
+
+Verify
+------
+1. Hard-refresh desktop-preview in side-by-side Chrome.
+2. Dummy → Competitive vs AI → at show: claim keypad + Confirm fully visible
+   with board + hand; no scroll-off for Confirm.
+3. Pegboard still clearly larger than phone; Dumpster/ZF/maple all get desktop clamp.
+4. Hand still clickable; crib/starter still smaller than hand.
+5. Phone / iPad (hover:none) layout unchanged; splash still contain (no ZF tile sides).
+
+Deploy (hard constraint)
+------------------------
+- npm test — 48 files / 462 tests passed
+- npm run build — passed (index-CUJgXsPt.css / index-CqklPWyU.js)
+- firebase hosting:channel:deploy desktop-preview ONLY (not live)
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+
+Deploy results
+--------------
+- npm test — 48 files / 462 tests passed
+- npm run build — passed (index-CUJgXsPt.css / index-CqklPWyU.js)
+- desktop-preview channel deployed 2026-09-19 ~20:53 ADT
+- Preview serves index-CUJgXsPt.css / index-CqklPWyU.js
+- Live untouched: still index-DwOlaAp5.css / index-OzRiGnDC.js
+- Preview URL: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app

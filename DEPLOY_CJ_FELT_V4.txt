@@ -1,0 +1,9 @@
+C&J Dumpster felt v4
+
+- Verified public/felts/cj-dumpster.jpg (784x1168) and cj-dumpster-thumb.jpg.
+- Bumped felt image and thumbnail URLs to ?v=4 in src/profile/felts.ts.
+- Bumped the two felt background URLs to ?v=4 in src/ui/styles.css.
+- Board CSS, Pegboard, ZF board, and layout were not changed.
+- npm run build: OK.
+- Deploy tar: /workspace/supercrib-dist.tar.gz
+- Firebase deploy: not run.

@@ -1,0 +1,14 @@
+{
+  "ownedBoardIds": [
+    "default",
+    "zero_forge"
+  ],
+  "ownedFeltIds": [
+    "felt",
+    "zero_forge",
+    "cj_dumpster"
+  ],
+  "settings": {
+    "board": "default"
+  }
+}

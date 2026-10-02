@@ -1,0 +1,145 @@
+Side live chat LINKING stuck — SDP never written — desktop-preview ONLY
+Date: 2026-09-20 ~12:25 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Project: supercrib241-baba2
+
+Ask
+---
+Josh 12:16 ADT still stuck after index-Ba3tA8EE.js ready-early fix. Screenshot:
+CONNECTING… + Leave + faint Linking…, mic allowed, discard·online, Dummy vs You.
+"still not connected with these two messages". Preview only. Do NOT claim another
+partial win. Prove RTDB, fix until ready+offer+answer+ICE connected OR clear Failed.
+
+Proven stuck point (live RTDB at ~12:17 ADT)
+--------------------------------------------
+Room EVQCJ (Dummy vs Dummy2), created 2026-09-20T15:14:55Z = 12:14:55 ADT
+— Josh's retest AFTER index-Ba3tA8EE.js (matches screenshot 12:15 ADT):
+
+  seats[0]=Dummy  connected=true  lastSeen≈create (stale)
+  seats[1]=Dummy2 connected=true  lastSeen fresh
+  voice.ready     = [true, true]     ← both-ready WORKS (early publish OK)
+  voice.offer     = ABSENT
+  voice.answer    = ABSENT
+  voice.ice       = ABSENT
+  voice.renegotiate = 1789917333887 (15:15:33Z)  ← guest bumped once
+  voice.talking   = [null, false]    ← seat0 never wrote talking
+
+UI map:
+  CONNECTING…  = uiStatus joining (status connecting/ready || joiningBusy)
+  Linking…     = statusDetail when bothReady=true (ready listener)
+  Live green   = status==='live' (connectionState OR iceConnectionState connected)
+
+So: handshake reached Linking (both ready) but HOST NEVER WROTE AN OFFER.
+Not an ICE/TURN failure yet — SDP never existed. Guest waits forever on Linking
+(guest had no SDP-timeout Failed path).
+
+Root causes
+-----------
+1) Host offer never produced after early ready (PRIMARY)
+   Early publishSeatVoiceReady makes bothReady before mic is on the PC.
+   maybeNegotiate correctly defers when !micAttached. adoptMicStream / ensureMic
+   should then offer — but StrictMode / effect teardown could:
+     - take pendingMicRef, cancel mid-flight
+     - adoptMicStream(disposed) STOPPED the Join mic tracks (destroyed stream)
+     - remount had no pending mic → ensureMic without gesture fails on Safari
+   Evidence: ready=[true,true], talking[0]=null, renegotiate from guest, no offer.
+
+2) Guest infinite Linking when host never offers (UX)
+   scheduleLinkWatchdog / LINK_FAIL only ran on seat 0. Guest stayed on Linking…
+
+3) FreeSTUN TURN was dead for relay (SECONDARY, after SDP)
+   freestun.net resolves via Cloudflare; TCP 3478 does NOT connect (only 80/443).
+   openrelay.metered.ca TCP 3478/443/80 DOES connect from this box.
+
+Hard fix
+--------
+1) voicePtt.ts
+   - adoptMicStream on disposed: do NOT stop tracks (return Voice closed; restore).
+   - Host offer retry loop every 2s while bothReady + micAttached + !live.
+   - Guest: 10s bothReady with no offer → Failed "No offer from host…".
+   - Host: 8s bothReady without micAttached → Failed "Mic not on sender…".
+   - Ready re-assert no longer returns before processing bothReady.
+   - kickNegotiate() public nudge after Join mic attach.
+   - getDebugSnapshot + formatVoiceLinkDebug for preview badge line.
+   - TURN: replace freestun with openrelay.metered.ca / global.relay.metered.ca
+     (openrelayproject / openrelayproject) + optional VITE_METERED_TURN_API_URL.
+   - clearLinkTimers also clears offer/guest/host wait timers.
+
+2) useSideLiveChat.ts
+   - Restore pendingMic if effect cancelled after taking it / failed adopt.
+   - Call kickNegotiate() after announceReady.
+   - Poll debugLine every 500ms while session alive.
+
+3) SideLiveChatButton + Table + App + CSS
+   - Preview debug line under badge: me/them/offer/answer/ice/conn/mic/seat.
+
+Unchanged (as required)
+-----------------------
+- VOICE_PTT_ENABLED = false
+- SIDE_LIVE_CHAT_ENABLED + isSideLiveChatEnabled(hostname)
+  ON: --desktop-preview- / localhost / 127.0.0.1
+  OFF: live hosts
+- Cut+COUNT CSS tests still pass
+- Live hosting channel NOT deployed
+
+Files
+-----
+- src/multiplayer/voicePtt.ts
+- src/multiplayer/useSideLiveChat.ts
+- src/multiplayer/__tests__/voicePtt.test.ts
+- src/ui/SideLiveChatButton.tsx
+- src/ui/Table.tsx
+- src/ui/App.tsx
+- src/ui/styles.css
+- .env.example (VITE_METERED_TURN_API_URL comment)
+- DEPLOY_SIDE_CHAT_LINKING.txt (this note)
+
+Tests / build
+-------------
+- npm test — 60 files / 555 tests passed
+- npm run build — passed
+  - dist/assets/index-BqB3_5qt.js (947.79 kB)
+  - dist/assets/index-BH-8jxTM.css (182.44 kB)
+
+Deploy
+------
+- firebase hosting:channel:deploy desktop-preview --expires 30d
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (expires ~2026-10-20 12:24 ADT)
+  serves index-BqB3_5qt.js / index-BH-8jxTM.css
+  (bundle contains openrelay.metered.ca, "No offer from host", kickNegotiate)
+- Live UNTOUCHED: https://supercrib241-baba2.web.app
+  still index-BG_0NujD.js / index-QmjC4Aj0.css
+
+Metered TURN from Josh?
+-----------------------
+Optional but recommended for hard NAT / cellular:
+  1. Free Metered account → Open Relay → copy credentials API URL
+  2. Set in .env (preview build):
+       VITE_METERED_TURN_API_URL=https://<app>.metered.live/api/v1/turn/credentials?apiKey=...
+  3. Redeploy desktop-preview
+Public openrelayproject demo creds are wired now (host reachable). If auth is
+rejected in-browser, Metered REST is the reliable path. STUN alone may still
+work same-WiFi.
+
+Exact retest (two devices on preview)
+-------------------------------------
+1. Hard-refresh preview on BOTH devices. Network must show index-BqB3_5qt.js.
+2. Online match; both Join live chat (allow mic).
+3. Within ~2s expect debug line like:
+     me=1 them=1 offer=1 answer=1 ice=connected conn=connected mic=1 seat=0|1
+   Badge → green Live (not infinite CONNECTING/Linking).
+4. If still red: screenshot the debug line.
+   - me/them not both 1 → ready still broken (say which seat)
+   - offer=0 after 10s → host Failed "No offer…" / guest Failed "No offer from host"
+   - offer=1 answer=1 but ice=failed/checking → TURN/NAT; add Metered URL
+5. Speak (VAD) — peer hears without PTT. Leave → Join again.
+6. Live site: no Join live chat control (hostname gate).
+
+RTDB proof checklist
+--------------------
+rooms/{CODE}/voice after both Join:
+  ready both true?
+  offer + answer present?  (this was missing on EVQCJ)
+  ice/{0} and ice/{1} candidate counts / typ relay?
+  If offer/answer/ICE exist but UI CONNECTING → connectionState path / screenshot debug line.

@@ -1,0 +1,11 @@
+Supercrib emoji reaction rails moved up to clear CRIB and STARTER.
+
+Tops used:
+- Base .reaction-dock: 38%
+- Desktop @900: 38%
+- Desktop @1100: 40%
+
+Left/right anchors remain symmetric and unchanged.
+Build: npm run build (passed).
+Firebase deploy: not run.
+Artifact: /workspace/supercrib-dist.tar.gz (flat archive of dist/).

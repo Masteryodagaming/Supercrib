@@ -1,0 +1,71 @@
+Online cut visibility (dealer sees opponent cut) — 2026-09-19 ~22:55 ADT
+
+Ask
+---
+Josh (dealer, online phone + browser, NOT AI): does not see the other player
+cutting (cut-for-deal and/or cut-for-starter). Other seat named "dummy 2" but
+this is online multiplayer. Preview only; do not promote live. Do not touch
+voice/chat. Keep lobby mode-after-both-join, Approve/Adjust sticky, WAV SFX.
+
+Root cause
+----------
+1) Starter cut (Table): seat gating only showed CutFan when
+   `pone === viewer` (or AI anim). Dealer waiting for pone got banner
+   "Waiting for … to cut…" with NO deck fan and NO reveal. When RTDB applied
+   cutStarter, phase jumped straight to pegging — spectator never saw the cut.
+   Prior Dummy2 cut timing was AI-only and did not cover online sync.
+
+2) Cut-for-deal (CutForDeal): online non-actor got text placeholder
+   "Opponent is cutting — hang tight…" instead of a visible deck fan.
+
+Fix
+---
+1) Waiting starter cut: show non-interactive CutFan (watchMode) for dealer /
+   spectator while phase === 'cut' and they are not the cutter.
+2) Online remote reveal: when spectator locally saw phase 'cut' then RTDB
+   advances past cut with a starter, replay local select→reveal anim
+   (aiCutAnim.remote) without calling cutStarter again; UI stays locked until
+   reveal finishes. Works both directions (whoever is not pone).
+3) Cut-for-deal online: show disabled DealCutFan while waiting (both seats),
+   not a blank placeholder.
+4) Helpers + unit tests: onlineCutWatch.ts (waiting fan + remote reveal edge).
+
+Constraints kept
+----------------
+- VOICE_PTT_ENABLED = false (unchanged)
+- No side live chat / VAD
+- Lobby mode-after-both-join, Approve/Adjust sticky, WAV SFX untouched
+- Preview only — live not promoted
+
+How to test on preview
+----------------------
+1. Hard-refresh desktop-preview on phone + computer.
+2. Online match: both join → host Play → cut for deal.
+   - Non-cutting seat MUST see the face-down fan while opponent cuts.
+   - After both cut, reveals still show.
+3. After deal/discard → starter cut (pone cuts):
+   - Dealer MUST see the stock fan while waiting.
+   - When pone taps a cut, dealer MUST see select→reveal of the starter
+     before pegging UI takes over.
+4. Swap seats / who deals: verify both directions.
+5. vs-AI Dummy2 cut anim still works; voice Hold still absent.
+
+Deploy (hard constraint)
+------------------------
+- npm test — 55 files / 514 tests passed
+- npm run build — passed (index-BVHZuAGF.css / index-B3zKnQnz.js)
+- firebase hosting:channel:deploy desktop-preview ONLY (not live)
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (channel expires ~2026-10-19 22:54 ADT)
+- Live untouched (not promoted)
+- VOICE_PTT_ENABLED left false
+
+Key files
+---------
+- src/ui/onlineCutWatch.ts (new helpers)
+- src/ui/__tests__/onlineCutWatch.test.ts
+- src/ui/Table.tsx (waiting fan + remote anim fan)
+- src/ui/CutFan.tsx (watchMode / remote actorLabel)
+- src/ui/App.tsx (remote starter-cut reveal effect)
+- src/ui/CutForDeal.tsx (waiting fan instead of blank placeholder)
+- DEPLOY_ONLINE_CUT_VISIBLE.txt (this note)

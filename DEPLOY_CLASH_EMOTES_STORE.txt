@@ -1,0 +1,27 @@
+Clash special emotes → purchasable Store + Yoda RTDB grant
+Date: 2026-09-17 ~21:03 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Tar: /workspace/supercrib-dist.tar.gz (flat tar of dist/)
+
+SHOP (SUPER_COIN_SHOP kind emoji, all 200 SC)
+- emoji_mad_finger → unlockId mad_finger — Mad Finger — /reactions/mad_finger.png?v=5
+- emoji_trash_toss → unlockId trash_toss — Trash Toss — /reactions/trash_toss.png?v=2
+- emoji_ace_spade → unlockId ace_spade — Spade Wizard — /reactions/ace_spade.png?v=2
+- emoji_grandma_peggy → unlockId grandma_peggy — Grandma Peggy — /reactions/grandma_peggy.png?v=1
+
+STORE
+- STORE_TEASER_EMOJIS = [] (empty)
+- STORE_EMOJI_ITEMS = SUPER_COIN_SHOP.filter(kind===emoji)
+- Store EMOJI shelf open (Buy/Owned) like BOARD/FELT; avatar + SUPERCOIN stay locked
+
+YODA RTDB (uid CphdDQWSDQbCf58rAMpo78wtFFm2)
+ownedEmojiIds after merge:
+  ["mad_finger","trash_toss","ace_spade","grandma_peggy"]
+(other profile fields untouched)
+
+DEPLOY
+- Live: https://supercrib241-baba2.web.app
+- desktop-preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+- grandma_peggy.png + anim frames present in dist
+
+TESTS: coins.test.ts 27 passed; full suite OK; npm run build OK

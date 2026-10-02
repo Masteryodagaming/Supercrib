@@ -1,0 +1,40 @@
+Lobby mode after both join — 2026-09-19 ~22:44 ADT
+
+Ask
+---
+Join the room first; pick Normal vs Competitive only once both players
+are in the waiting lobby. Preview only. No live promote. No voice/chat.
+
+Changes
+-------
+1) Home: "Play online" skips the pre-join Normal/Competitive overlay and
+   opens the online lobby with room scoringMode defaulting to auto.
+2) OnlineLobby: Normal/Competitive chooser (host writable) shows only when
+   connection === 'connected' (same signal as "Both here"). Alone →
+   "Waiting for opponent… Scoring mode unlocks when both are here."
+   Guest sees live read-only badge once both are in; locks on cut/Play.
+3) Host Play still starts cut after both are in. setRoomScoringMode /
+   lock rules unchanged. Voice/PTT left off; Approve/Adjust + WAV SFX
+   untouched this pass.
+
+How to test
+-----------
+1. Hard-refresh desktop-preview.
+2. Play online → Create room → alone: no mode buttons.
+3. Guest joins → both see "Both here" → host picks Normal ↔ Competitive
+   (guest badge updates) → host Play → mode locked.
+
+Deploy
+------
+- npm test — 54 files / 497 tests passed
+- npm run build — passed (index-BVHZuAGF.css / index-DywvdhVa.js)
+- firebase hosting:channel:deploy desktop-preview ONLY (not live)
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (channel expires ~2026-10-19 22:44 ADT)
+- Live NOT promoted
+- VOICE_PTT_ENABLED = false
+
+Key files
+---------
+- src/ui/Home.tsx
+- src/ui/OnlineLobby.tsx

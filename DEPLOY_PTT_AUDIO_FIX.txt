@@ -1,0 +1,65 @@
+PTT audio unlock + honest Opp + mic renegotiate
+Date: 2026-09-18 ~15:09 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Tar: /workspace/supercrib-dist.tar.gz (flat tar of dist/)
+
+SYMPTOM
+- Online self-test: Opp pulse shows while talking/{seat} is true, but listener
+  hears nothing. talking/{seat} is RTDB UI-only — it can light Opp even when
+  WebRTC media never connected. Safari often blocks <audio>.play() until a
+  user gesture; prior code swallowed play() errors.
+
+FIXES
+
+1) PushToTalkButton — Safari / iOS audio unlock
+- audioUnlocked ref set on every hold start (user gesture).
+- On hold: audio.muted = false, volume = 1, playsinline + webkit-playsinline,
+  retry audio.play() for remoteStream (errors logged, not swallowed silently).
+- When remoteStream arrives after a prior gesture, retry unlockAndPlay.
+
+2) Honest Opp indicator
+- Opp pulse only when remoteTalking AND peerLive (status === 'live' /
+  pc.connectionState === 'connected').
+- If remote talking but peer not live → short hint “Voice not linked”
+  (no false-positive Opp).
+- useVoicePtt exposes peerLive; App → Table → PushToTalkButton.
+
+3) Mic → renegotiate reliability (voicePtt.ts)
+- ensureMic no longer claims status 'live' unless pc already connected.
+- Host maybeNegotiate: deferred when not stable (needsRenegotiate flag);
+  retries after answer applied.
+- Guest onRemoteOffer: when stable (or have-remote-offer), setRemoteDescription
+  → createAnswer → write answer; skips identical SDP re-fires; logs failures
+  to status.
+- Host apply-answer failures logged to status.
+
+4) No TURN added (still STUN-only). Emoji rails / layout untouched.
+
+SELF-TEST NOTE
+Two devices/browsers. Opp without sound usually meant ICE failed (STUN-only)
+or Safari audio blocked. After this fix: hold once to unlock remote audio;
+if peer never connects you’ll see “Voice not linked” instead of a lying Opp.
+
+FILES
+- src/ui/PushToTalkButton.tsx
+- src/multiplayer/useVoicePtt.ts
+- src/multiplayer/voicePtt.ts
+- src/ui/Table.tsx / App.tsx (peerLive prop)
+- src/ui/styles.css (.ptt-voice-unlinked)
+
+BUILD / TEST
+- npm test -- src/multiplayer/__tests__/voicePtt.test.ts  (7 passed)
+- npm run build  OK
+
+DEPLOY
+- Live: https://supercrib241-baba2.web.app
+- desktop-preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (expires 2026-10-18 ~03:03 ADT)
+
+HOW TO VERIFY
+1. Hard-refresh live (or desktop-preview) on two browsers/devices.
+2. Online match → both hold mic once (allow mic; unlocks remote <audio>).
+3. If ICE connects: hear peer while they hold; Opp pulse only when live.
+4. If ICE fails (strict NAT): talking may still set RTDB → “Voice not linked”,
+   not Opp. Fix later with TURN if needed.
+5. Vs AI / emoji rails unchanged.

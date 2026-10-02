@@ -1,0 +1,149 @@
+Voice: single deterministic offerer + round ids + guest orphan-transceiver fix
+Date: 2026-09-24 ~19:18 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Project: supercrib241-baba2
+Backup of pre-change src: /workspace/supercrib-backups/src-before-glare-fix-20260924-1910.tgz
+
+Ask
+---
+The host (seat0) still can't hear the guest; the guest hears the host fine. Live was index-DVjQ1RpI.js.
+Host iPhone debug: ... offer=1 answer=1 seenOffer=1 wroteAnswer=1 rtdbAnswer=1
+  sendDir=sendrecv sendEn=0 ice=connected conn=connected seat=0
+  diag=answer-ignored:stable
+Guest iPhone debug (same session, stuck on "Answering…"): ... sendDir=sendrecv sendEn=1
+  ice=connected conn=connected seat=1 diag=answer-ok
+Josh greenlit LIVE for this fix (preview + live).
+
+Root cause (code evidence)
+--------------------------
+1) GUEST MIC ON AN ORPHAN TRANSCEIVER (main cause of the deaf host; happens with NO glare)
+   start() ran pc.addTransceiver('audio',{direction:'sendrecv'}) on BOTH seats.
+   JSEP (RFC 9429 §5.10): when a remote offer is applied, an unmatched m-line re-uses
+   only a transceiver created by addTrack(), never one created by addTransceiver().
+   So on the guest, setRemoteDescription(hostOffer) created a SECOND transceiver
+   (mid=0, which is the one negotiated). The guest's own transceiver stayed orphaned (mid=null).
+   adoptMicStream/ensureMic then did getSenders().find(s => s.track?.kind==='audio' || !s.track),
+   which picks the FIRST sender, i.e. the orphan. Result: the guest mic is enabled but sits
+   on a transceiver that isn't in the SDP. The host receives an m-line whose sender has no
+   track, so it hears silence. The host's own mic is on its offerer transceiver (mid=0), so the
+   guest hears the host.
+   The debug line hid this: sendDir took the first transceiver's currentDirection and, when that
+   was null, fell back to .direction ("sendrecv"). So the guest's "sendDir=sendrecv sendEn=1"
+   described the ORPHAN, not the negotiated sender.
+   Reproduced on the OLD code with the new JSEP-faithful harness, plain flow with no glare:
+     HOST  [{addTransceiver mid:0 cur:sendrecv senderHasTrack:true}]
+     GUEST [{addTransceiver mid:null cur:null senderHasTrack:TRUE},   <- mic here (orphan)
+            {remote mid:0 cur:sendrecv senderHasTrack:FALSE}]          <- negotiated, silent
+   The old host debug line in that repro matches Josh's screenshot field for field
+   (offer=1 answer=1 seenOffer=1 wroteAnswer=1 rtdbAnswer=1 sendDir=sendrecv sendEn=0).
+
+2) GLARE PATHS (real, but not needed to explain the deaf host)
+   Code note: for the offerer, getDebugSnapshot reported wroteAnswer = seenRemoteAnswer, so the
+   host's wroteAnswer=1 means "saw an RTDB answer", NOT "wrote an answer". diag=answer-ignored:stable
+   means another answer arrived after the host was already stable. That fits a duplicate or stale
+   answer, and it also fits glare. Seat-1 offer paths that existed:
+     - scheduleBackupOffer: 2s after seat1's bothReady with no offer seen -> backupOffererActive
+       -> maybeNegotiate -> writes voice/offer {from:1}, overwriting the shared offer key.
+       Stale ready/0 (hard refresh leaves it true) starts this clock before the host exists.
+     - Once seat1 had published: offer-retry loop, onnegotiationneeded, voice/renegotiate listener,
+       ICE-failed restart, link watchdog, hold-live ICE restart, and mic-attach maybeNegotiate all
+       kept seat1 as an offerer (hasPublishedOffer stayed true for good).
+   Seat-0 answer paths: offer listener (from=1), ensureAnswerRemoteOffer, answer-retry loop,
+   1s force-answer, flushPendingRemoteOffer. The glare "rollback" let the later `at` win,
+   so the "impolite" host rolled back ITS offer and answered the guest's offer. The guest's
+   answer to the host's rolled-back offer then landed in stable: answer-ignored:stable.
+   The new harness on the OLD code shows seat1 publishing 2 offers when the host is slow.
+   Stale offer/answer were never cleared on start and carried no round, so an old answer could
+   meet a new offer.
+
+3) GUEST "Answering…" STUCK WHILE CONNECTED
+   onRemoteOffer emitted connecting/'Answering…' on every (re)answer. On an already-connected PC
+   no further ICE state change fires, so 'live' was never re-emitted.
+
+Fix
+---
+- Single deterministic offerer: seat0 is the ONLY offerer (initial, ICE restart, renegotiation).
+  maybeNegotiate has a hard seat gate. shouldCreateOfferAsSeat is seat0-only. Seat0 ignores
+  voice/offer entirely and never answers. The backup offerer is replaced by a request:
+  seat1 writes voice/reoffer {from:1, at, reason} (no-offer | late-mic | answer-recvonly |
+  live-recvonly | ice-failed), throttled to 2.5s gaps and 6 per PC. Seat0 re-offers.
+- Round ids: every offer carries round "<hostSid>.<seq>". The answer echoes the round plus gsid
+  (guest session id). Seat0 applies an answer only if round === current local offer round AND
+  have-local-offer. Other answers are dropped quietly (diag answer-stale:*, no error status).
+  Each new round clears voice/answer in the same RTDB write. Seat0 start() clears stale
+  offer/answer/reoffer/renegotiate. ICE candidates are tagged with the host sid and filtered.
+- Session changes: if the host sid changes (host refresh), the guest rebuilds its PC (keeps the mic).
+  If the guest re-joins (handshake re-forms, a no-offer request arrives while the host is
+  negotiated, or an answer comes from a new gsid), the host rebuilds its PC with a new sid and re-offers.
+- Orphan fix: only seat0 pre-creates the audio transceiver. Seat1 binds its mic to the transceiver
+  the host's offer negotiated (selectNegotiatedAudioTransceiver by remote mid), right before
+  createAnswer and on every mic attach. No addTrack of extra m-lines.
+- Host receive: ontrack, answer-applied, guest answer and Live all call rebindRemoteAudio(). It
+  picks the transceiver on the negotiated audio mid with a recv-capable currentDirection and binds
+  its receiver.track. It emits a NEW MediaStream when the track changes so React re-sets srcObject.
+  onRemoteRebind -> retryRemoteVoicePlay. The hook re-kicks play() every ~2s while live and paused.
+- Host self-check: after an answer / on Live, if the host transceiver is sendonly or inactive,
+  it re-offers (max 2).
+- Label: 'Answering…' is emitted only when not live. reassertLiveStatus() runs after every
+  answer/apply.
+- Debug line adds: recvDir, inBytes (inbound-rtp bytesReceived, 2s getStats), audioLevel,
+  remTracks (receiving negotiated audio transceivers), txc (total transceivers; an orphan shows
+  as txc > remTracks), audioPaused (persistent <audio>), and round (sid-tail.seq).
+  sendDir now reads the NEGOTIATED send transceiver. A trailing "?" means not yet negotiated.
+
+Kept (do not regress)
+---------------------
+ready only after mic (announce/heartbeat/stayReady gated); link watchdog 8s/14s (seat0 only);
+no blind renegotiate; wait for mic before answering; brief sender enable around
+createOffer/Answer then restore VAD gate; VAD monitor track vs sender clone; persistent remote
+<audio> + Safari play retries; mobile-only gate (voiceConfig untouched); lobby->table session
+hold; VAD not PTT.
+
+Files
+-----
+- src/multiplayer/voicePtt.ts
+- src/multiplayer/useSideLiveChat.ts
+- src/multiplayer/remoteVoicePlayback.ts   (getRemoteVoiceAudioState)
+- src/multiplayer/__tests__/voiceNegotiation.test.ts   (NEW: fake RTDB + JSEP fake PC)
+- src/multiplayer/__tests__/voicePtt.test.ts    (contract: seat0 never answers / seat1 never offers)
+- src/multiplayer/__tests__/lobbyVoice.test.ts  (same contract update)
+- DEPLOY_VOICE_SINGLE_OFFERER_GLARE.txt (this note)
+
+Tests / build
+-------------
+- New session-level tests (all fail on the old code, all pass now):
+  * seat1 never publishes an offer while seat0 is present (stale ready/0, past the 2s window;
+    rogue from=1 offer ignored by the host)
+  * stale answer from an earlier round (and a pre-round answer) dropped, no error, not applied
+  * late guest mic after a recvonly negotiation -> reoffer-req:late-mic -> host round 2 ->
+    host transceiver currentDirection sendrecv, remote <audio> bound to that receiver track
+  * host refresh -> guest rebuilds PC
+  * re-answer while connected does not show 'Answering…'
+  + pure helper tests (round decisions, orphan-safe selection, stats extraction, debug fields)
+- tsc --noEmit OK; vitest 64 files / 659 tests passed; vite build OK
+  assets: index-DxTeeYEr.js / index-ChX0cL2_.css
+
+Deploy result (2026-09-24 ~19:18 ADT)
+------------------------------------
+- Preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app
+  (expires 2026-10-24 19:18 ADT) serves index-DxTeeYEr.js / index-ChX0cL2_.css
+- Live:    https://supercrib241-baba2.web.app (also firebaseapp.com)
+  serves index-DxTeeYEr.js / index-ChX0cL2_.css
+  (previous live: index-DVjQ1RpI.js; rollback = redeploy that build via Firebase console
+   Hosting release history)
+
+Exact retest (two iPhones)
+--------------------------
+1. BOTH phones: open the live URL (or preview), hard refresh / close and reopen the tab.
+   Confirm index-DxTeeYEr.js (the new debug line has recvDir= / inBytes= / round=; old builds don't).
+   Both phones MUST be on the new build (answers without a round are dropped by design).
+2. Lobby: both tap Connect voice, allow mic, wait for green Live.
+3. Talk both ways for ~10s.
+4. Screenshot BOTH debug lines. Expected:
+   HOST  (seat=0): sendDir=sendrecv recvDir=sendrecv remTracks=1 txc=1 audioPaused=0,
+                   inBytes RISING between screenshots ~2s apart, audioLevel > 0 while the guest talks,
+                   diag=answer-applied:xxxx.1 (or offer-ok), same round as the guest
+   GUEST (seat=1): sendDir=sendrecv (no "?") txc=1 recvDir=sendrecv, same round=, label Live (not Answering…)
+5. Start the match: voice holds. The desktop browser still shows no voice UI.
+If the host still can't hear: send both lines. inBytes flat means no packets (network/sender side).
+inBytes rising with audioPaused=1 or audioLevel=0 means the playback side.

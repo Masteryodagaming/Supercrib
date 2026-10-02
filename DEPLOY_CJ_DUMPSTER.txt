@@ -1,0 +1,25 @@
+C&J Dumpster pegboard skin — live Store (1000 SC) + Joe J gift
+
+id: cj_dumpster
+shop: board_cj_dumpster (kind board, price 1000 SC, unlockId cj_dumpster)
+label: C&J Dumpster
+asset: public/boards/cj-dumpster.jpg (896×1280, ?v=8) — keep paint; Pegboard hole math untouched
+unlock:
+  - Store Board shelf: buy → ownedBoardIds += cj_dumpster (ledger buy_board)
+  - Dummy/Tester auto: BOARD_SKIN_TEST_UID / joshuamilliea@icloud.com
+  - Gift/cloud: anyone with cj_dumpster in ownedBoardIds (no Dummy-only strip)
+  - Owner (j0shwa) does NOT auto-get — must buy or receive gift
+Joe J gift (live RTDB, 2026-09-16 ~19:36 ADT / updatedAt 1789598205403):
+  uid: 1b99N2vTZgfWC6xBCOlCp5OJDSa2
+  email: joejacobfrancis@hotmail.ca
+  displayName: Joe J
+  wrote users/{uid}/profile/ownedBoardIds = ["cj_dumpster"] (same durable path as
+  Garbage Man ownedAvatarIds). Survives Save/settings merge via ownedBoardIds union.
+dist: /workspace/supercrib-dist.tar.gz (flat tar of dist/)
+
+Deploy: extract flat into hosting public dir. Do NOT firebase deploy from this note.
+Pegboard.tsx hole/path math untouched.
+
+---
+v=8 paint (prior FixIt) kept.
+Store: Board shelf unlocked (Avatars/Emoji/MORE still Coming soon).

@@ -1,0 +1,29 @@
+Mad Finger → Master Yoda unlock + locked Store listing (2026-09-16 AT ~06:32)
+
+Changes:
+- canUseMadFinger(uid,email) = Dummy OR isOwner (j0shwa@hotmail.com / Master Yoda)
+- effectiveOwnedEmojiIds / ownedReactEmojiIds / Settings save+auto-inject / hydrateAccountFromCloud
+  grant mad_finger for Owner too; strip for everyone else
+- STORE_TEASER_EMOJIS: emoji_mad_finger @ 200 SC (Coming soon) — NOT in SUPER_COIN_SHOP
+- Store.tsx: locked EMOJI shelf with Mad Finger teaser
+- Anim stays canonical Clash: hold 150 → peak 400 → smirk 550
+
+Box artifacts ready:
+  /workspace/supercrib-dist.tar.gz  (flat tar of dist/)
+  /workspace/supercrib/dist/        (built; index.html at dist root)
+
+MSI path (machineId b8a670af-0b3a-4878-86f4-8b98e0731cbc):
+  1) CopyFromBox /workspace/supercrib-dist.tar.gz
+       -> C:\Users\J0shw\Downloads\supercrib-dist.tar.gz
+  2) Wipe+extract flat into C:\Users\J0shw\Downloads\supercrib\supercrib\dist
+       (index.html must land in dist/)
+  3) cd C:\Users\J0shw\Downloads\supercrib\supercrib
+     npx.cmd firebase deploy --only hosting
+     npx.cmd firebase hosting:channel:deploy desktop-preview
+
+Expected:
+  https://supercrib241-baba2.web.app
+  + desktop-preview channel URL from firebase output
+
+NOTE: This subagent has no cursor MCP (CopyFromBox/ListMachines).
+Parent must run CopyFromBox + MSI firebase deploy.

@@ -1,0 +1,25 @@
+{
+  "id": "grandma_peggy",
+  "label": "Grandma Peggy",
+  "durationMs": 2100,
+  "frames": [
+    "f1.png",
+    "f2.png",
+    "f3.png",
+    "f4.png"
+  ],
+  "frameDurationsMs": [
+    225,
+    275,
+    350,
+    1250
+  ],
+  "size": 512,
+  "named": [
+    "00_peg",
+    "01_board",
+    "02_fist",
+    "03_laugh"
+  ],
+  "note": "Art update 2026-09-17: flood-cut white \u2192 center ~4% pad \u2192 512 LANCZOS (same load as mad_finger/trash_toss/mad_father/ace_spade). Frames: idle peg, laugh board, angry fist, laugh hold."
+}

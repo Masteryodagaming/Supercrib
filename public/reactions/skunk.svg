@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <radialGradient id="fur" cx="40%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#3a3a3a"/>
+      <stop offset="55%" stop-color="#1a1a1a"/>
+      <stop offset="100%" stop-color="#0a0a0a"/>
+    </radialGradient>
+    <linearGradient id="stripe" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#d8d8d8"/>
+    </linearGradient>
+    <filter id="soft" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="2.2" stdDeviation="1.6" flood-color="#000" flood-opacity="0.32"/>
+    </filter>
+  </defs>
+  <ellipse cx="32" cy="58" rx="16" ry="3" fill="#000" opacity="0.18"/>
+  <g filter="url(#soft)">
+    <g>
+      <path d="M42 33c11-1 17-14 11-23-1.5 9-8 14-15 16z" fill="url(#fur)"/>
+      <path d="M44 31c7.5-0.8 12-9 9-16.5" stroke="url(#stripe)" stroke-width="4.2" stroke-linecap="round" fill="none"/>
+      <animateTransform attributeName="transform" type="rotate" values="-5 43 30; 7 43 30; -5 43 30" dur="1.25s" repeatCount="indefinite"/>
+    </g>
+    <ellipse cx="30" cy="40" rx="14.5" ry="12.5" fill="url(#fur)"/>
+    <path d="M24 29c0.5 14 4.2 22.5 6.2 24.5" stroke="url(#stripe)" stroke-width="5" stroke-linecap="round" fill="none"/>
+    <circle cx="24" cy="25.5" r="11.5" fill="url(#fur)"/>
+    <path d="M24 15.5v15" stroke="url(#stripe)" stroke-width="4.6" stroke-linecap="round"/>
+    <ellipse cx="16" cy="17.5" rx="3.4" ry="4" fill="url(#fur)"/>
+    <ellipse cx="32" cy="17.5" rx="3.4" ry="4" fill="url(#fur)"/>
+    <ellipse cx="16.2" cy="17.8" rx="1.4" ry="1.6" fill="#4a3040" opacity="0.55"/>
+    <ellipse cx="32.2" cy="17.8" rx="1.4" ry="1.6" fill="#4a3040" opacity="0.55"/>
+    <circle cx="20" cy="24.5" r="2.4" fill="#0a0a0a"/>
+    <circle cx="28" cy="24.5" r="2.4" fill="#0a0a0a"/>
+    <circle cx="20.7" cy="23.7" r="0.85" fill="#fff"/>
+    <circle cx="28.7" cy="23.7" r="0.85" fill="#fff"/>
+    <ellipse cx="24" cy="28.6" rx="2.4" ry="1.7" fill="#2a2a2a"/>
+    <circle cx="24" cy="28" r="1.15" fill="#0a0a0a"/>
+    <path d="M20.8 31c1.3 1.5 3 1.7 3.2 1.7s1.9-0.2 3.2-1.7" stroke="#eee" stroke-width="1.3" stroke-linecap="round" fill="none"/>
+    <ellipse cx="14" cy="20" rx="4" ry="2.2" fill="#fff" opacity="0.12"/>
+    <ellipse cx="22" cy="50" rx="3.6" ry="2.3" fill="#0a0a0a"/>
+    <ellipse cx="34" cy="50" rx="3.6" ry="2.3" fill="#0a0a0a"/>
+  </g>
+</svg>

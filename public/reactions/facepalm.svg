@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <radialGradient id="skin" cx="42%" cy="30%" r="68%">
+      <stop offset="0%" stop-color="#f8d4b0"/>
+      <stop offset="55%" stop-color="#e0a878"/>
+      <stop offset="100%" stop-color="#b87848"/>
+    </radialGradient>
+    <linearGradient id="hair" x1="0.2" y1="0" x2="0.9" y2="1">
+      <stop offset="0%" stop-color="#ffe07a"/>
+      <stop offset="50%" stop-color="#e8c040"/>
+      <stop offset="100%" stop-color="#b89018"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2.4" stdDeviation="1.7" flood-color="#000" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+  <ellipse cx="32" cy="58" rx="15" ry="2.8" fill="#000" opacity="0.16"/>
+  <g filter="url(#soft)">
+    <circle cx="34" cy="33" r="19.5" fill="url(#skin)"/>
+    <ellipse cx="28" cy="22" rx="7" ry="3.5" fill="#fff" opacity="0.18"/>
+    <path d="M16 26c1.5-13 13-17.5 19.5-15.5 3.5 7.5 1.5 15.5-2.5 17.5-6 2-13.5 1.5-17-2z" fill="url(#hair)"/>
+    <path d="M36 17c6-2.2 12.5 1.8 14.5 8 1 4-1 8.2-4.2 9.2-5 1.2-9-2-10.2-6.2z" fill="url(#hair)"/>
+    <ellipse cx="41.5" cy="33.5" rx="3.2" ry="3.6" fill="#4a3018"/>
+    <circle cx="42.5" cy="32.4" r="1" fill="#fff" opacity="0.85"/>
+    <path d="M37.5 27.5c3.2-1.2 6.4 0 7.5 2.2" stroke="#4a3018" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+    <path d="M37.5 44c2.2 2.2 4.4 2.6 5.4 2.6" stroke="#8a5a40" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+    <g>
+      <path d="M11 29c4.2-2.2 10.5-1 14.5 2.2 3.2 2.2 5.4 6.2 5.4 10.2 0 4.2-3.2 8.2-8.4 9.2-6.2 1.2-12.5-2-14.8-7.2-2.2-4.2 0-10.2 3.3-14.4z" fill="url(#skin)" stroke="#a87850" stroke-width="1.3"/>
+      <path d="M17.5 27c1.2-4.2 4.4-6.2 7.4-5.2M24 26c1.2-3.2 3.4-5 5.5-4M29.5 28c1.2-3 3.2-4.2 5.2-3" stroke="#a87850" stroke-width="1.7" stroke-linecap="round" fill="none"/>
+      <ellipse cx="18" cy="34" rx="3" ry="1.6" fill="#fff" opacity="0.2"/>
+      <animateTransform attributeName="transform" type="translate" values="0 0; 0 1.4; 0 0" dur="1.35s" repeatCount="indefinite"/>
+    </g>
+  </g>
+</svg>

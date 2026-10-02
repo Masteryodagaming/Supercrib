@@ -1,0 +1,24 @@
+Mad Father Clash emote
+Date: 2026-09-17 ~21:48 ADT (America/Halifax)
+Tree: /workspace/supercrib
+Tar: /workspace/supercrib-dist.tar.gz (flat tar of dist/)
+
+ART (512 RGBA sticker, flood-cut near-white → bbox → 4% pad → LANCZOS)
+- public/reactions/anim/mad_father/f1.png … f4.png
+- named: 00_calm, 01_shock, 02_mad, 03_steam
+- public/reactions/mad_father.png (=f1 idle)
+- meta.json frameDurationsMs [225,275,350,1250] durationMs 2100
+
+SHOP
+- emoji_mad_father → unlockId mad_father — Mad Father — /reactions/mad_father.png?v=1 — 200 SC — glyph 😤
+
+YODA RTDB (uid CphdDQWSDQbCf58rAMpo78wtFFm2)
+ownedEmojiIds after merge:
+  ["mad_finger","trash_toss","ace_spade","grandma_peggy","mad_father"]
+(other profile fields untouched; displayName still Master Yoda)
+
+DEPLOY
+- Live: https://supercrib241-baba2.web.app
+- desktop-preview: https://supercrib241-baba2--desktop-preview-wnxjhlfw.web.app (expires 2026-10-17)
+
+TESTS: reactEmojis.test.ts 24 + coins.test.ts 27 = 51 passed; npm run build OK

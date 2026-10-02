@@ -1,0 +1,23 @@
+Dummy cloud unlock (patch, not wipe) — run on MSI machineId b8a670af-0b3a-4878-86f4-8b98e0731cbc
+Repo: C:\Users\J0shw\Downloads\supercrib\supercrib (or after CopyFromBox)
+
+Preferred (infile):
+  CopyFromBox /workspace/supercrib/scripts/dummy-unlock/patch.json → MSI temp
+  npx.cmd firebase database:update /users/cHYLDPXD6cSdZCtNmxv7hmg0VSI2/profile --project supercrib241-baba2 -d "@C:\path\to\patch.json"
+
+Or PowerShell:
+  powershell -File scripts\dummy-unlock\msi-patch-dummy.ps1
+
+Verify:
+  npx.cmd firebase database:get /users/cHYLDPXD6cSdZCtNmxv7hmg0VSI2/profile/ownedBoardIds --project supercrib241-baba2
+  npx.cmd firebase database:get /users/cHYLDPXD6cSdZCtNmxv7hmg0VSI2/profile/ownedFeltIds --project supercrib241-baba2
+
+Expect:
+  ownedBoardIds = ["default","zero_forge"] (Dumpster stripped)
+  settings.board = "default" (Dumpster stripped)
+  ownedFeltIds  = ["felt","zero_forge","cj_dumpster"] (felt retained)
+
+Box firebase: NOT logged in — executor could not write RTDB.
+
+Inline example:
+npx.cmd firebase database:update /users/cHYLDPXD6cSdZCtNmxv7hmg0VSI2/profile --project supercrib241-baba2 -d "{\"ownedBoardIds\":[\"default\",\"zero_forge\"],\"ownedFeltIds\":[\"felt\",\"zero_forge\",\"cj_dumpster\"],\"settings\":{\"board\":\"default\"}}"
